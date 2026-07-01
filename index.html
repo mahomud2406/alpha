@@ -563,6 +563,10 @@
     uniform vec2 m;      // mouse 0..1
     uniform float s;     // scroll zone 0..3
 
+    float w0,w1,w2,w3;
+    vec2 tOff;
+    vec3 laneC,deepC,highC,sunC;
+
     float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
     float noise(vec2 p){
       vec2 i=floor(p), f=fract(p);
@@ -572,87 +576,183 @@
     }
     float fbm(vec2 p){
       float v=0., a=.5;
-      for(int i=0;i<5;i++){ v+=a*noise(p); p=p*2.03+vec2(1.7,9.2); a*=.5; }
+      for(int i=0;i<4;i++){ v+=a*noise(p); p=p*2.03+vec2(1.7,9.2); a*=.5; }
       return v;
     }
+    mat2 rot2(float a){ float c=cos(a),si=sin(a); return mat2(c,-si,si,c); }
     float sdSeg(vec2 p, vec2 a, vec2 b){
       vec2 pa=p-a, ba=b-a;
       float h=clamp(dot(pa,ba)/dot(ba,ba),0.,1.);
       return length(pa-ba*h);
     }
-    mat2 rot(float a){ float c=cos(a),si=sin(a); return mat2(c,-si,si,c); }
+    float sdCyl(vec3 p, float h, float rad){
+      vec2 d=abs(vec2(length(p.xz),p.y))-vec2(rad,h);
+      return min(max(d.x,d.y),0.)+length(max(d,0.));
+    }
+    float sdOct(vec3 p, float k){ p=abs(p); return (p.x+p.y+p.z-k)*.57735; }
+
+    // laner i banens grunnplan, blandet per sone
+    float laneDist(vec2 q){
+      float d0=min(sdSeg(q,vec2(-.9),vec2(.9)),
+               min(min(sdSeg(q,vec2(-.7,-.7),vec2(-.7,.7)),sdSeg(q,vec2(-.7,.7),vec2(.7,.7))),
+                   min(sdSeg(q,vec2(-.7,-.7),vec2(.7,-.7)),sdSeg(q,vec2(.7,-.7),vec2(.7,.7)))));
+      float d1=sdSeg(q,vec2(-.9),vec2(.9));
+      float d2=min(min(sdSeg(q,vec2(-.75,.35),vec2(.75,.35)),sdSeg(q,vec2(-.75,-.35),vec2(.75,-.35))),
+                   abs(length(q)-.22));
+      float d3=abs(fract(length(q)*2.2-t*.12)-.5)/2.2;
+      return w0*d0+w1*d1+w2*d2+w3*d3;
+    }
+    float riverD(vec2 q){ return sdSeg(q,vec2(-.9,.9),vec2(.9,-.9)); }
+
+    // hoydefelt: jungel + fjellrand rundt banen, laner og elv gravd flate
+    float terrainH(vec2 q){
+      float e=fbm(q*2.3+tOff);
+      float hgt=e*e*.55;
+      float rim=smoothstep(.55,1.3,length(q));
+      hgt+=rim*(.3+.3*fbm(q*3.1+tOff+7.));
+      hgt*=smoothstep(.015,.16,laneDist(q));
+      hgt-=w0*.07*smoothstep(.1,0.,riverD(q));
+      return hgt*.5;
+    }
+
+    vec2 opU(vec2 a, vec2 b){ return a.x<b.x?a:b; }
+
+    // taarn: sokkel + topp + glodende krystall (id 1 = stein, id 2 = krystall)
+    vec2 sdTurret(vec3 p, vec2 c){
+      vec3 q=p-vec3(c.x,0.,c.y);
+      float b=min(sdCyl(q-vec3(0.,.1,0.),.1,.05), sdCyl(q-vec3(0.,.22,0.),.026,.07));
+      vec2 res=vec2(b,1.);
+      float g=sdOct(q-vec3(0.,.31,0.),.05);
+      if(g<res.x)res=vec2(g,2.);
+      return res;
+    }
+
+    // hele scenen: terreng + taarn + nexus + kjerne + minions
+    vec2 mapScene(vec3 p){
+      vec2 res=vec2((p.y-terrainH(p.xz))*.5,0.);
+      res=opU(res,sdTurret(p,vec2(.52,.52)));
+      res=opU(res,sdTurret(p,vec2(-.52,-.52)));
+      res=opU(res,sdTurret(p,vec2(.24,.24)));
+      res=opU(res,sdTurret(p,vec2(-.24,-.24)));
+      vec3 q=p-vec3(.9,.36,.9); q.xz=rot2(t*.5)*q.xz;
+      float nx=sdOct(q,.15);
+      q=p-vec3(-.9,.36,-.9); q.xz=rot2(-t*.5)*q.xz;
+      nx=min(nx,sdOct(q,.15));
+      if(nx<res.x)res=vec2(nx,3.);
+      q=p-vec3(0.,.46+.06*sin(t*1.2),0.); q.xz=rot2(t*.8)*q.xz;
+      float cc=sdOct(q,.14);
+      if(cc<res.x)res=vec2(cc,3.);
+      float u1=fract(t*.06), u2=fract(t*.05+.4);
+      float mn=length(p-vec3(mix(-.85,.85,u1),.045,mix(-.85,.85,u1)))-.032;
+      mn=min(mn,length(p-vec3(mix(.85,-.85,u2),.045,mix(.85,-.85,u2)))-.032);
+      if(mn<res.x)res=vec2(mn,3.);
+      return res;
+    }
+
+    vec3 calcN(vec3 p){
+      vec2 e=vec2(.0045,0.);
+      return normalize(vec3(
+        mapScene(p+e.xyy).x-mapScene(p-e.xyy).x,
+        mapScene(p+e.yxy).x-mapScene(p-e.yxy).x,
+        mapScene(p+e.yyx).x-mapScene(p-e.yyx).x));
+    }
+
+    vec3 skyCol(vec3 rd){
+      float hz=clamp(rd.y,0.,1.);
+      vec3 c=mix(vec3(.035,.045,.09),vec3(.004,.006,.016),pow(hz,.45));
+      c+=highC*.14*fbm(rd.xy*3.2+vec2(t*.015,0.))*(1.-hz);
+      c+=sunC*.05*pow(1.-hz,4.);
+      return c;
+    }
+
+    // analytisk bloom rundt lyspunkter
+    float glowP(vec3 ro, vec3 rd, vec3 c){
+      vec3 w=c-ro;
+      float proj=max(dot(w,rd),0.);
+      float dd=length(w-rd*proj);
+      return exp(-dd*dd*34.);
+    }
 
     void main(){
-      vec2 pp=(gl_FragCoord.xy-.5*r)/r.y;   // aspect-korrigert skjermrom
+      // sone-vekter (0=Rift 1=Abyss 2=Treeline 3=Void)
+      w0=clamp(1.-abs(s-0.),0.,1.);
+      w1=clamp(1.-abs(s-1.),0.,1.);
+      w2=clamp(1.-abs(s-2.),0.,1.);
+      w3=clamp(1.-abs(s-3.),0.,1.);
+      tOff=w1*vec2(13.7,7.3)+w2*vec2(27.2,3.1)+w3*vec2(5.5,19.9);
+      deepC=w0*vec3(.02,.09,.055)+w1*vec3(.03,.06,.13)+w2*vec3(.06,.02,.09)+w3*vec3(.06,.01,.08);
+      highC=w0*vec3(.16,.5,.3)+w1*vec3(.42,.62,.85)+w2*vec3(.44,.26,.55)+w3*vec3(.68,.16,.58);
+      laneC=w0*vec3(.2,.95,.7)+w1*vec3(.5,.85,1.)+w2*vec3(.75,.45,1.)+w3*vec3(1.,.25,.8);
+      sunC =w0*vec3(1.,.95,.85)+w1*vec3(.75,.9,1.1)+w2*vec3(.9,.75,1.05)+w3*vec3(1.05,.7,.95);
 
-      // --- kamera: skraatt ned paa en plan bane som snurrer ---
-      float pers=1./(1.6-pp.y*.55);
-      vec2 gnd=pp*pers*2.4;
-      gnd.y+=.3;
-      gnd=rot(t*.1)*gnd;                    // banen snurrer kontinuerlig
-      gnd+=vec2(sin(t*.07),cos(t*.09))*.06; // svak kamera-drift
+      vec2 uv=(gl_FragCoord.xy-.5*r)/r.y;
 
-      // --- sone-vekter fra scroll (0=Rift 1=Abyss 2=Treeline 3=Void) ---
-      float w0=clamp(1.-abs(s-0.),0.,1.);
-      float w1=clamp(1.-abs(s-1.),0.,1.);
-      float w2=clamp(1.-abs(s-2.),0.,1.);
-      float w3=clamp(1.-abs(s-3.),0.,1.);
+      // kamera i bane rundt kartet — ekte 3D-rotasjon
+      float a=t*.11+(m.x-.5)*.7;
+      float ch=1.5-(m.y-.5)*.35;
+      vec3 ro=vec3(2.65*cos(a),ch,2.65*sin(a));
+      vec3 ta=vec3(0.,.08,0.);
+      vec3 fw=normalize(ta-ro);
+      vec3 rt=normalize(cross(fw,vec3(0.,1.,0.)));
+      vec3 up=cross(rt,fw);
+      vec3 rd=normalize(fw*1.5+uv.x*rt+uv.y*up);
 
-      // terreng: hver bane har sitt eget landskap
-      vec2 off=w1*vec2(13.7,7.3)+w2*vec2(27.2,3.1)+w3*vec2(5.5,19.9);
-      float h=fbm(gnd*2.6+off);
+      vec3 col;
+      if(rd.y>-.02){
+        col=skyCol(rd);            // over horisonten: bare himmel
+      }else{
+        float d=0., id=-1.;
+        for(int i=0;i<72;i++){
+          vec3 p=ro+rd*d;
+          vec2 h=mapScene(p);
+          if(h.x<.001+.0016*d){ id=h.y; break; }
+          d+=h.x;
+          if(d>7.5)break;
+        }
+        if(d>7.5||id<0.){
+          col=skyCol(rd);
+        }else{
+          vec3 p=ro+rd*d;
+          vec3 n=calcN(p);
+          vec3 sun=normalize(vec3(-.55,.75,.35));
+          float dif=clamp(dot(n,sun),0.,1.);
+          float amb=.38+.38*clamp(n.y,0.,1.);
+          float ao=clamp(mapScene(p+n*.1).x/.1,0.,1.);
+          if(id<.5){
+            // terreng med detaljtekstur, laneglod og elv
+            float hh=terrainH(p.xz);
+            vec3 alb=mix(deepC,highC,clamp(hh*3.4,0.,1.));
+            alb*=.8+.4*fbm(p.xz*11.+tOff);
+            float ld=laneDist(p.xz);
+            float rv=riverD(p.xz);
+            float wat=w0*smoothstep(.08,.025,rv);
+            vec3 wc=vec3(.04,.22,.4)*(.8+.35*sin(p.x*26.-t*1.8)+.2*sin(p.z*31.+t*2.3));
+            alb=mix(alb,wc,wat);
+            col=alb*(dif*sunC+amb*vec3(.3,.4,.55));
+            col+=laneC*exp(-ld*24.)*1.25;
+            col+=wat*vec3(.5,.75,1.)*pow(clamp(dot(reflect(rd,n),sun),0.,1.),18.);
+          }else if(id<1.5){
+            // taarnstein
+            vec3 alb=mix(vec3(.32,.35,.44),highC,.3);
+            col=alb*(dif*sunC+amb*vec3(.28,.38,.52));
+            col+=pow(clamp(dot(reflect(rd,n),sun),0.,1.),24.)*sunC*.35;
+          }else{
+            // emissive krystaller/minions med fresnel
+            float fres=pow(1.-clamp(dot(-rd,n),0.,1.),2.);
+            col=laneC*(1.15+fres*1.5)+vec3(.22);
+          }
+          col*=.5+.5*ao;
+          float fo=1.-exp(-d*.15);
+          col=mix(col,skyCol(rd),fo*.8);
+        }
+      }
 
-      vec3 deep=w0*vec3(.015,.075,.05)+w1*vec3(.02,.05,.12)+w2*vec3(.05,.015,.08)+w3*vec3(.05,.008,.075);
-      vec3 high=w0*vec3(.08,.5,.3)+w1*vec3(.3,.6,.9)+w2*vec3(.42,.22,.52)+w3*vec3(.7,.12,.6);
-      vec3 lane=w0*vec3(.2,.95,.7)+w1*vec3(.5,.85,1.)+w2*vec3(.75,.45,1.)+w3*vec3(1.,.25,.8);
+      // bloom rundt kjernen og nexusene
+      col+=laneC*.55*glowP(ro,rd,vec3(0.,.5,0.));
+      col+=laneC*.3*(glowP(ro,rd,vec3(.9,.4,.9))+glowP(ro,rd,vec3(-.9,.4,-.9)));
 
-      vec3 col=mix(deep,high,h*h*1.5);
-
-      // --- laner per bane ---
-      // Rift: tre laner + elv
-      float d0=min(sdSeg(gnd,vec2(-.95),vec2(.95)),
-               min(min(sdSeg(gnd,vec2(-.75,-.75),vec2(-.75,.75)),sdSeg(gnd,vec2(-.75,.75),vec2(.75,.75))),
-                   min(sdSeg(gnd,vec2(-.75,-.75),vec2(.75,-.75)),sdSeg(gnd,vec2(.75,-.75),vec2(.75,.75)))));
-      float riv=sdSeg(gnd,vec2(-.95,.95),vec2(.95,-.95));
-      // Abyss: en bred isbro
-      float d1=sdSeg(gnd,vec2(-.95),vec2(.95));
-      // Treeline: to laner + alter-sirkel
-      float d2=min(min(sdSeg(gnd,vec2(-.8,.35),vec2(.8,.35)),sdSeg(gnd,vec2(-.8,-.35),vec2(.8,-.35))),
-                   abs(length(gnd)-.18));
-      // Void: pulserende ringer utover
-      float rr=length(gnd);
-      float d3=abs(fract(rr*2.5-t*.18)-.5)/2.5;
-
-      float glow=w0*exp(-d0*26.)+w1*exp(-d1*10.)+w2*exp(-d2*26.)
-                +w3*exp(-d3*16.)*smoothstep(1.2,.1,rr);
-      col+=lane*glow*.85;
-      col+=w0*vec3(.12,.45,.75)*exp(-riv*12.)*.6;          // elva
-      col=mix(col,col*(.2+.8*exp(-d1*3.)),w1);             // abyss: stup utenfor broen
-
-      // minions/pings som vandrer langs midtlinjen
-      float pt=fract(t*.09);
-      vec2 ping=mix(vec2(-.95),vec2(.95),pt);
-      col+=lane*exp(-length(gnd-ping)*38.)*1.1;
-      vec2 ping2=mix(vec2(.95),vec2(-.95),fract(t*.07+.4));
-      col+=lane*exp(-length(gnd-ping2)*38.)*.8;
-
-      // banegrense: glodende ring, verdensrom utenfor
-      float inside=smoothstep(1.28,1.16,rr);
-      float ring=exp(-abs(rr-1.22)*26.);
-      vec3 space=vec3(.008,.01,.028)+deep*.5*fbm(pp*3.+t*.02);
-      col=mix(space,col,inside);
-      col+=lane*ring*.6;
-
-      // atmosfaerisk taake mot horisonten (cinematic depth)
-      vec3 sky=vec3(.008,.012,.03)+high*.09*fbm(pp*2.-t*.03);
-      col=mix(col,sky,smoothstep(.12,.8,pp.y));
-
-      // muslys
-      vec2 mu=(m*r-.5*r)/r.y;
-      col+=lane*.14*exp(-4.*length(pp-mu));
-
-      // vignett
-      col*=1.-.5*dot(pp,pp);
+      col=pow(max(col,0.),vec3(.92));
+      col*=1.-.42*dot(uv,uv);
       gl_FragColor=vec4(col,1.);
     }
   `;
@@ -709,7 +809,7 @@
   addEventListener('scroll',onScroll,{passive:true});
 
   function resize(){
-    const d=Math.min(devicePixelRatio||1,1.6);
+    const d=Math.min(devicePixelRatio||1,1.3)*.8;   // raymarching er tungt — render litt lavere og la GPU-en skalere
     canvas.width=innerWidth*d; canvas.height=innerHeight*d;
     gl.viewport(0,0,canvas.width,canvas.height);
     measure(); onScroll();
