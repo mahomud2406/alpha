@@ -12,6 +12,8 @@
     --teal:#39f0d4;
     --violet:#8b5cf6;
     --gold:#f5c451;
+    --ice:#7fd4ff;
+    --void:#ff4fc3;
     --line:rgba(232,236,244,.09);
     font-synthesis:none;
   }
@@ -35,6 +37,47 @@
     position:fixed;inset:0;width:100%;height:100%;
     z-index:1;pointer-events:none;mix-blend-mode:screen;
   }
+
+  /* ---------- cinematic layer ---------- */
+  .letterbox{
+    position:fixed;left:0;right:0;height:5vh;z-index:200;pointer-events:none;
+    background:#000;
+  }
+  .letterbox.top{top:0;box-shadow:0 1px 0 rgba(232,236,244,.06)}
+  .letterbox.bot{bottom:0;box-shadow:0 -1px 0 rgba(232,236,244,.06)}
+  .grain{
+    position:fixed;inset:-60px;z-index:190;pointer-events:none;opacity:.07;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation:grain .4s steps(4) infinite;
+  }
+  @keyframes grain{
+    0%{transform:translate(0,0)} 25%{transform:translate(-24px,14px)}
+    50%{transform:translate(18px,-20px)} 75%{transform:translate(-10px,-16px)}
+    100%{transform:translate(0,0)}
+  }
+  .map-hud{
+    position:fixed;left:6vw;bottom:8vh;z-index:210;pointer-events:none;
+    font-size:10px;letter-spacing:.4em;color:var(--dim);text-transform:uppercase;
+  }
+  .map-hud .mh-name{
+    display:block;margin-top:8px;font-size:15px;letter-spacing:.3em;color:var(--ink);
+    font-weight:700;transition:opacity .5s;
+  }
+  .map-hud .mh-ticks{display:flex;gap:8px;margin-top:12px}
+  .map-hud .mh-ticks i{
+    width:22px;height:2px;background:rgba(232,236,244,.2);transition:background .5s;
+  }
+  .map-hud .mh-ticks i.on{background:var(--teal)}
+  .rec{
+    position:fixed;right:6vw;bottom:8vh;z-index:210;pointer-events:none;
+    display:flex;align-items:center;gap:10px;
+    font-size:10px;letter-spacing:.4em;color:var(--dim);
+  }
+  .rec::before{
+    content:"";width:9px;height:9px;border-radius:50%;background:#ff4757;
+    animation:blink 1.4s steps(2) infinite;
+  }
+  @keyframes blink{50%{opacity:.15}}
 
   /* ---------- custom cursor ---------- */
   .cursor{
@@ -62,15 +105,11 @@
 
   /* ---------- nav ---------- */
   nav{
-    position:fixed;top:0;left:0;right:0;z-index:100;
+    position:fixed;top:5vh;left:0;right:0;z-index:100;
     display:flex;justify-content:space-between;align-items:center;
     padding:22px 6vw;
-    backdrop-filter:blur(2px);
   }
-  .logo{
-    font-weight:800;letter-spacing:.45em;font-size:14px;
-    color:var(--ink);
-  }
+  .logo{font-weight:800;letter-spacing:.45em;font-size:14px;color:var(--ink)}
   .logo b{color:var(--teal)}
   .nav-tag{
     font-size:11px;letter-spacing:.3em;color:var(--dim);
@@ -112,14 +151,12 @@
   .hero-title .g1{
     background:linear-gradient(180deg,var(--teal),transparent 70%);
     -webkit-background-clip:text;background-clip:text;
-    animation:glitchA 4s infinite steps(1);
-    opacity:.9;
+    animation:glitchA 4s infinite steps(1);opacity:.9;
   }
   .hero-title .g2{
     background:linear-gradient(180deg,var(--violet),transparent 70%);
     -webkit-background-clip:text;background-clip:text;
-    animation:glitchB 4s infinite steps(1);
-    opacity:.9;
+    animation:glitchB 4s infinite steps(1);opacity:.9;
   }
   @keyframes glitchA{
     0%,92%,100%{transform:translate(0,0)}
@@ -144,7 +181,7 @@
     to{opacity:1;transform:translateY(0)}
   }
   .scroll-hint{
-    position:absolute;bottom:36px;left:50%;transform:translateX(-50%);
+    position:absolute;bottom:9vh;left:50%;transform:translateX(-50%);
     font-size:10px;letter-spacing:.4em;color:var(--dim);
     display:flex;flex-direction:column;align-items:center;gap:12px;
     opacity:0;animation:riseIn 1s 1.2s forwards;
@@ -161,6 +198,32 @@
     100%{transform:scaleY(0);transform-origin:bottom}
   }
 
+  /* ---------- chapter cards ---------- */
+  .chapter{
+    min-height:110vh;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+    text-align:center;gap:3vh;
+  }
+  .chapter .ch-num{
+    font-size:12px;letter-spacing:.7em;color:var(--dim);text-transform:uppercase;
+  }
+  .chapter .ch-name{
+    font-size:clamp(44px,9vw,130px);font-weight:900;letter-spacing:.02em;line-height:1;
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .chapter[data-zone="0"] .ch-name{background-image:linear-gradient(120deg,#c8ffe9,var(--teal),#0e6b52)}
+  .chapter[data-zone="1"] .ch-name{background-image:linear-gradient(120deg,#eaf7ff,var(--ice),#1c5f9e)}
+  .chapter[data-zone="2"] .ch-name{background-image:linear-gradient(120deg,#efe3ff,var(--violet),#3d1e7a)}
+  .chapter[data-zone="3"] .ch-name{background-image:linear-gradient(120deg,#ffe3f4,var(--void),#7a1257)}
+  .chapter .ch-lore{
+    max-width:520px;color:var(--dim);font-size:clamp(15px,1.7vw,19px);line-height:1.8;
+  }
+  .chapter .ch-lore strong{color:var(--ink)}
+  .chapter .ch-rule{
+    width:1px;height:9vh;
+    background:linear-gradient(180deg,transparent,rgba(232,236,244,.35),transparent);
+  }
+
   /* ---------- marquee ---------- */
   .marquee{
     padding:0;overflow:hidden;white-space:nowrap;
@@ -168,8 +231,7 @@
     background:rgba(5,6,10,.5);
   }
   .marquee-track{
-    display:inline-block;
-    padding:18px 0;
+    display:inline-block;padding:18px 0;
     font-size:13px;letter-spacing:.35em;color:var(--dim);text-transform:uppercase;
     animation:marquee 26s linear infinite;
   }
@@ -244,15 +306,12 @@
     background:linear-gradient(90deg,var(--teal),var(--violet));
     padding:8px 16px;border-radius:99px;font-weight:700;
   }
-  .card h3{
-    margin-top:26px;font-size:56px;font-weight:900;letter-spacing:.06em;
-  }
+  .card h3{margin-top:26px;font-size:56px;font-weight:900;letter-spacing:.06em}
   .card .role{color:var(--dim);font-size:13px;letter-spacing:.25em;margin-top:6px;text-transform:uppercase}
   .card .rows{margin-top:34px;display:grid;gap:16px}
   .card .row{
     display:flex;justify-content:space-between;align-items:center;
-    border-bottom:1px solid var(--line);padding-bottom:14px;
-    font-size:14px;
+    border-bottom:1px solid var(--line);padding-bottom:14px;font-size:14px;
   }
   .card .row .k{color:var(--dim);letter-spacing:.15em;text-transform:uppercase;font-size:11px}
   .card .row .v{font-weight:600}
@@ -268,9 +327,7 @@
     min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
     text-align:center;gap:6vh;
   }
-  .orbit{
-    position:relative;width:min(420px,80vw);height:min(420px,80vw);
-  }
+  .orbit{position:relative;width:min(420px,80vw);height:min(420px,80vw)}
   .orbit .core{
     position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
     width:86px;height:86px;border-radius:50%;
@@ -295,8 +352,7 @@
   @keyframes spin{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(360deg)}}
   .sat{
     position:absolute;top:-7px;left:50%;
-    width:14px;height:14px;border-radius:50%;
-    transform:translateX(-50%);
+    width:14px;height:14px;border-radius:50%;transform:translateX(-50%);
   }
   .r1 .sat{background:var(--gold);box-shadow:0 0 18px var(--gold)}
   .r2 .sat{background:var(--teal);box-shadow:0 0 18px var(--teal)}
@@ -306,15 +362,14 @@
 
   /* ---------- footer ---------- */
   footer{
-    padding:12vh 6vw 8vh;text-align:center;
+    padding:12vh 6vw 14vh;text-align:center;
     border-top:1px solid var(--line);
   }
   footer .big{
-    font-size:clamp(30px,6vw,80px);font-weight:900;letter-spacing:-.02em;
-    line-height:1.1;
+    font-size:clamp(30px,6vw,80px);font-weight:900;letter-spacing:-.02em;line-height:1.1;
   }
   footer .big span{
-    background:linear-gradient(90deg,var(--teal),var(--violet),var(--gold));
+    background:linear-gradient(90deg,var(--teal),var(--violet),var(--void));
     background-size:200%;
     -webkit-background-clip:text;background-clip:text;
     -webkit-text-fill-color:transparent;
@@ -328,6 +383,17 @@
 
 <canvas id="gl"></canvas>
 <canvas id="stars"></canvas>
+
+<div class="letterbox top"></div>
+<div class="letterbox bot"></div>
+<div class="grain"></div>
+<div class="map-hud">
+  <span>Now flying over</span>
+  <span class="mh-name" id="mhName">SUMMONER'S RIFT</span>
+  <span class="mh-ticks" id="mhTicks"><i class="on"></i><i></i><i></i><i></i></span>
+</div>
+<div class="rec">REC · ALPHA CAM</div>
+
 <div class="cursor"></div>
 <div class="cursor-ring"></div>
 
@@ -338,7 +404,7 @@
 
 <main>
 
-  <!-- HERO -->
+  <!-- HERO (zone 0) -->
   <section class="hero">
     <div class="hero-kicker">Alger · 28 · Solo Queue</div>
     <h1 class="hero-title" id="title">
@@ -348,9 +414,20 @@
     </h1>
     <p class="hero-sub">
       Én mann. Ett tastatur. <em>Null duo-partnere.</em><br>
-      IT om dagen. Summoner's Rift om natten. Dette er historien om en som griner alene — og carrier alene.
+      Scroll for å fly gjennom banene hans — fra Rift til tomrommet og tilbake.
     </p>
     <div class="scroll-hint">SCROLL</div>
+  </section>
+
+  <!-- CHAPTER I -->
+  <section class="chapter" data-zone="0">
+    <div class="ch-num reveal">Kapittel I · Bane 01</div>
+    <div class="ch-name reveal">SUMMONER'S RIFT</div>
+    <div class="ch-rule reveal"></div>
+    <p class="ch-lore reveal">
+      Her bor grinden. Tre laner, én elv, femti minutter om gangen.
+      Det er 5v5 på papiret — men <strong>Alpha teller alltid som én</strong>.
+    </p>
   </section>
 
   <!-- MARQUEE -->
@@ -389,10 +466,16 @@
       Mens andre bruker kveldene på støy, bygger han mekanikk, macro og mental —
       én queue om gangen. <span class="hl">Grinden diskriminerer ikke. Den belønner den som møter opp.</span>
     </p>
-    <p class="reveal">
-      Og en dag, når rammen rundt profilbildet skifter farge og LP-en teller oppover,
-      kommer folk til å spørre: <strong>«Hvem er den fyren?»</strong><br>
-      Svaret har alltid stått i navnet.
+  </section>
+
+  <!-- CHAPTER II -->
+  <section class="chapter" data-zone="1">
+    <div class="ch-num reveal">Kapittel II · Bane 02</div>
+    <div class="ch-name reveal">HOWLING ABYSS</div>
+    <div class="ch-rule reveal"></div>
+    <p class="ch-lore reveal">
+      Isbroen. Ingen jungel å gjemme seg i, ingen recall uten grunn.
+      Én bro, én retning: <strong>framover</strong>. Akkurat slik Alpha liker det.
     </p>
   </section>
 
@@ -414,6 +497,18 @@
     </div>
   </section>
 
+  <!-- CHAPTER III -->
+  <section class="chapter" data-zone="2">
+    <div class="ch-num reveal">Kapittel III · Bane 03</div>
+    <div class="ch-name reveal">TWISTED TREELINE</div>
+    <div class="ch-rule reveal"></div>
+    <p class="ch-lore reveal">
+      De gamle skogene, stengt og glemt av alle andre.
+      Glemte kart, glemte lagkamerater — men <strong>aldri glemte mekanikker</strong>.
+      Alpha husker alt.
+    </p>
+  </section>
+
   <!-- ORBIT -->
   <section class="orbit-zone">
     <div class="orbit reveal">
@@ -428,6 +523,17 @@
     </p>
   </section>
 
+  <!-- CHAPTER IV -->
+  <section class="chapter" data-zone="3">
+    <div class="ch-num reveal">Kapittel IV · Bane 04</div>
+    <div class="ch-name reveal">THE VOID</div>
+    <div class="ch-rule reveal"></div>
+    <p class="ch-lore reveal">
+      Der køen aldri popper og pingen er evig.
+      Alpha stirrer inn i tomrommet. <strong>Tomrommet blunker først.</strong>
+    </p>
+  </section>
+
   <!-- FOOTER -->
   <footer>
     <div class="big reveal">Lone wolf i dag.<br><span>Legende i morgen.</span></div>
@@ -437,7 +543,10 @@
 </main>
 
 <script>
-/* ================= WebGL aurora/nebula shader ================= */
+/* ============================================================
+   WebGL: roterende bane sett fra luften — scroll flyr deg
+   gjennom fire soner (Rift → Abyss → Treeline → Void)
+   ============================================================ */
 (function(){
   const canvas = document.getElementById('gl');
   const gl = canvas.getContext('webgl');
@@ -452,52 +561,108 @@
     uniform vec2 r;      // resolution
     uniform float t;     // time
     uniform vec2 m;      // mouse 0..1
+    uniform float s;     // scroll zone 0..3
 
     float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
     float noise(vec2 p){
       vec2 i=floor(p), f=fract(p);
       f=f*f*(3.-2.*f);
-      return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),
-                 mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);
+      return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),
+                 mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),f.x),f.y);
     }
     float fbm(vec2 p){
       float v=0., a=.5;
-      for(int i=0;i<6;i++){ v+=a*noise(p); p=p*2.03+vec2(1.7,9.2); a*=.5; }
+      for(int i=0;i<5;i++){ v+=a*noise(p); p=p*2.03+vec2(1.7,9.2); a*=.5; }
       return v;
     }
+    float sdSeg(vec2 p, vec2 a, vec2 b){
+      vec2 pa=p-a, ba=b-a;
+      float h=clamp(dot(pa,ba)/dot(ba,ba),0.,1.);
+      return length(pa-ba*h);
+    }
+    mat2 rot(float a){ float c=cos(a),si=sin(a); return mat2(c,-si,si,c); }
 
     void main(){
-      vec2 uv=(gl_FragCoord.xy-.5*r)/min(r.x,r.y);
-      float tt=t*.06;
+      vec2 pp=(gl_FragCoord.xy-.5*r)/r.y;   // aspect-korrigert skjermrom
 
-      // domain-warped fbm nebula
-      vec2 q=vec2(fbm(uv*1.4+tt), fbm(uv*1.4-tt*.7));
-      vec2 w=vec2(fbm(uv*1.4+q*1.8+vec2(1.7,9.2)+tt*.5),
-                  fbm(uv*1.4+q*1.8+vec2(8.3,2.8)-tt*.4));
-      float f=fbm(uv*1.4+w*2.2);
+      // --- kamera: skraatt ned paa en plan bane som snurrer ---
+      float pers=1./(1.6-pp.y*.55);
+      vec2 gnd=pp*pers*2.4;
+      gnd.y+=.3;
+      gnd=rot(t*.1)*gnd;                    // banen snurrer kontinuerlig
+      gnd+=vec2(sin(t*.07),cos(t*.09))*.06; // svak kamera-drift
 
-      vec3 teal  = vec3(.10,.85,.72);
-      vec3 violet= vec3(.45,.28,.95);
-      vec3 gold  = vec3(.96,.72,.28);
+      // --- sone-vekter fra scroll (0=Rift 1=Abyss 2=Treeline 3=Void) ---
+      float w0=clamp(1.-abs(s-0.),0.,1.);
+      float w1=clamp(1.-abs(s-1.),0.,1.);
+      float w2=clamp(1.-abs(s-2.),0.,1.);
+      float w3=clamp(1.-abs(s-3.),0.,1.);
 
-      vec3 col = mix(vec3(.015,.02,.045), teal*.5, smoothstep(.25,.85,f));
-      col = mix(col, violet*.55, smoothstep(.4,.95,q.y)*.8);
-      col += gold*.16*smoothstep(.72,1.,w.x);
+      // terreng: hver bane har sitt eget landskap
+      vec2 off=w1*vec2(13.7,7.3)+w2*vec2(27.2,3.1)+w3*vec2(5.5,19.9);
+      float h=fbm(gnd*2.6+off);
 
-      // mouse-following glow
-      vec2 mu=(m*r-.5*r)/min(r.x,r.y);
-      col += teal*.22*exp(-6.*length(uv-mu));
+      vec3 deep=w0*vec3(.015,.075,.05)+w1*vec3(.02,.05,.12)+w2*vec3(.05,.015,.08)+w3*vec3(.05,.008,.075);
+      vec3 high=w0*vec3(.08,.5,.3)+w1*vec3(.3,.6,.9)+w2*vec3(.42,.22,.52)+w3*vec3(.7,.12,.6);
+      vec3 lane=w0*vec3(.2,.95,.7)+w1*vec3(.5,.85,1.)+w2*vec3(.75,.45,1.)+w3*vec3(1.,.25,.8);
 
-      // vignette
-      col *= 1.-.55*dot(uv,uv);
+      vec3 col=mix(deep,high,h*h*1.5);
+
+      // --- laner per bane ---
+      // Rift: tre laner + elv
+      float d0=min(sdSeg(gnd,vec2(-.95),vec2(.95)),
+               min(min(sdSeg(gnd,vec2(-.75,-.75),vec2(-.75,.75)),sdSeg(gnd,vec2(-.75,.75),vec2(.75,.75))),
+                   min(sdSeg(gnd,vec2(-.75,-.75),vec2(.75,-.75)),sdSeg(gnd,vec2(.75,-.75),vec2(.75,.75)))));
+      float riv=sdSeg(gnd,vec2(-.95,.95),vec2(.95,-.95));
+      // Abyss: en bred isbro
+      float d1=sdSeg(gnd,vec2(-.95),vec2(.95));
+      // Treeline: to laner + alter-sirkel
+      float d2=min(min(sdSeg(gnd,vec2(-.8,.35),vec2(.8,.35)),sdSeg(gnd,vec2(-.8,-.35),vec2(.8,-.35))),
+                   abs(length(gnd)-.18));
+      // Void: pulserende ringer utover
+      float rr=length(gnd);
+      float d3=abs(fract(rr*2.5-t*.18)-.5)/2.5;
+
+      float glow=w0*exp(-d0*26.)+w1*exp(-d1*10.)+w2*exp(-d2*26.)
+                +w3*exp(-d3*16.)*smoothstep(1.2,.1,rr);
+      col+=lane*glow*.85;
+      col+=w0*vec3(.12,.45,.75)*exp(-riv*12.)*.6;          // elva
+      col=mix(col,col*(.2+.8*exp(-d1*3.)),w1);             // abyss: stup utenfor broen
+
+      // minions/pings som vandrer langs midtlinjen
+      float pt=fract(t*.09);
+      vec2 ping=mix(vec2(-.95),vec2(.95),pt);
+      col+=lane*exp(-length(gnd-ping)*38.)*1.1;
+      vec2 ping2=mix(vec2(.95),vec2(-.95),fract(t*.07+.4));
+      col+=lane*exp(-length(gnd-ping2)*38.)*.8;
+
+      // banegrense: glodende ring, verdensrom utenfor
+      float inside=smoothstep(1.28,1.16,rr);
+      float ring=exp(-abs(rr-1.22)*26.);
+      vec3 space=vec3(.008,.01,.028)+deep*.5*fbm(pp*3.+t*.02);
+      col=mix(space,col,inside);
+      col+=lane*ring*.6;
+
+      // atmosfaerisk taake mot horisonten (cinematic depth)
+      vec3 sky=vec3(.008,.012,.03)+high*.09*fbm(pp*2.-t*.03);
+      col=mix(col,sky,smoothstep(.12,.8,pp.y));
+
+      // muslys
+      vec2 mu=(m*r-.5*r)/r.y;
+      col+=lane*.14*exp(-4.*length(pp-mu));
+
+      // vignett
+      col*=1.-.5*dot(pp,pp);
       gl_FragColor=vec4(col,1.);
     }
   `;
 
   function sh(type,src){
-    const s=gl.createShader(type);
-    gl.shaderSource(s,src); gl.compileShader(s);
-    return s;
+    const o=gl.createShader(type);
+    gl.shaderSource(o,src); gl.compileShader(o);
+    if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))
+      console.error('shader:',gl.getShaderInfoLog(o));
+    return o;
   }
   const prog=gl.createProgram();
   gl.attachShader(prog,sh(gl.VERTEX_SHADER,vs));
@@ -514,25 +679,67 @@
   const uR=gl.getUniformLocation(prog,'r');
   const uT=gl.getUniformLocation(prog,'t');
   const uM=gl.getUniformLocation(prog,'m');
+  const uS=gl.getUniformLocation(prog,'s');
 
-  let mx=.5,my=.5, smx=.5, smy=.5;
+  let mx=.5,my=.5,smx=.5,smy=.5;
   addEventListener('pointermove',e=>{
     mx=e.clientX/innerWidth; my=1-e.clientY/innerHeight;
   });
+
+  /* ---- scroll → sone: kapitlene er ankerpunkter ---- */
+  const chapters=[...document.querySelectorAll('.chapter')];
+  let bps=[];
+  function measure(){
+    bps=chapters.map(el=>el.offsetTop+el.offsetHeight/2-innerHeight/2);
+  }
+  let zone=0, zoneTarget=0;
+  function onScroll(){
+    const sc=scrollY;
+    if(sc<=bps[0]){ zoneTarget=Math.max(0,(sc/bps[0]))*0.0; }
+    else if(sc>=bps[3]){ zoneTarget=3; }
+    else{
+      for(let i=0;i<3;i++){
+        if(sc>=bps[i]&&sc<bps[i+1]){
+          zoneTarget=i+(sc-bps[i])/(bps[i+1]-bps[i]);
+          break;
+        }
+      }
+    }
+  }
+  addEventListener('scroll',onScroll,{passive:true});
 
   function resize(){
     const d=Math.min(devicePixelRatio||1,1.6);
     canvas.width=innerWidth*d; canvas.height=innerHeight*d;
     gl.viewport(0,0,canvas.width,canvas.height);
+    measure(); onScroll();
   }
   addEventListener('resize',resize); resize();
+
+  /* ---- HUD ---- */
+  const names=["SUMMONER'S RIFT","HOWLING ABYSS","TWISTED TREELINE","THE VOID"];
+  const mhName=document.getElementById('mhName');
+  const ticks=[...document.getElementById('mhTicks').children];
+  let hudIdx=0;
+  function hud(z){
+    const idx=Math.min(3,Math.max(0,Math.round(z)));
+    if(idx!==hudIdx){
+      hudIdx=idx;
+      mhName.style.opacity=0;
+      setTimeout(()=>{ mhName.textContent=names[idx]; mhName.style.opacity=1; },250);
+      ticks.forEach((el,i)=>el.classList.toggle('on',i===idx));
+    }
+  }
 
   const t0=performance.now();
   (function frame(){
     smx+=(mx-smx)*.05; smy+=(my-smy)*.05;
+    zone+=(zoneTarget-zone)*.045;           // myk cinematic overgang
+    hud(zone);
     gl.uniform2f(uR,canvas.width,canvas.height);
     gl.uniform1f(uT,(performance.now()-t0)/1000);
     gl.uniform2f(uM,smx,smy);
+    gl.uniform1f(uS,zone);
     gl.drawArrays(gl.TRIANGLES,0,3);
     requestAnimationFrame(frame);
   })();
@@ -553,7 +760,7 @@
     }));
   }
   addEventListener('resize',resize); resize();
-  (function frame(t){
+  (function frame(){
     x.clearRect(0,0,W,H);
     for(const p of parts){
       p.x+=p.vx; p.y+=p.vy; p.tw+=.03;
@@ -607,7 +814,7 @@
         io.unobserve(e.target);
       }
     }
-  },{threshold:.25});
+  },{threshold:.2});
   document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
 })();
 
