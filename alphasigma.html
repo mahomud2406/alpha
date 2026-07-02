@@ -3,18 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ALPHA — Én mann. Ett grind.</title>
+<title>ALPHASIGMA — Habibi. Sertifisert.</title>
 <style>
   :root{
-    --bg:#05060a;
-    --ink:#e8ecf4;
-    --dim:#8a93a8;
-    --teal:#39f0d4;
-    --violet:#8b5cf6;
-    --gold:#f5c451;
-    --ice:#7fd4ff;
-    --void:#ff4fc3;
-    --line:rgba(232,236,244,.09);
+    --bg:#0a0704;
+    --ink:#f4ede0;
+    --dim:#a8987f;
+    --gold:#ffd166;
+    --amber:#f77f00;
+    --oasis:#39f0d4;
+    --rose:#ff9f43;
+    --line:rgba(244,237,224,.09);
     font-synthesis:none;
   }
   *{margin:0;padding:0;box-sizing:border-box}
@@ -26,25 +25,15 @@
     overflow-x:hidden;
     cursor:none;
   }
-  ::selection{background:var(--teal);color:#05060a}
+  ::selection{background:var(--gold);color:#0a0704}
 
-  /* ---------- WebGL canvas ---------- */
-  #gl{
-    position:fixed;inset:0;width:100%;height:100%;
-    z-index:0;pointer-events:none;
-  }
-  #stars{
-    position:fixed;inset:0;width:100%;height:100%;
-    z-index:1;pointer-events:none;mix-blend-mode:screen;
-  }
+  #gl{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+  #stars{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;mix-blend-mode:screen}
 
   /* ---------- cinematic layer ---------- */
-  .letterbox{
-    position:fixed;left:0;right:0;height:5vh;z-index:200;pointer-events:none;
-    background:#000;
-  }
-  .letterbox.top{top:0;box-shadow:0 1px 0 rgba(232,236,244,.06)}
-  .letterbox.bot{bottom:0;box-shadow:0 -1px 0 rgba(232,236,244,.06)}
+  .letterbox{position:fixed;left:0;right:0;height:5vh;z-index:200;pointer-events:none;background:#000}
+  .letterbox.top{top:0;box-shadow:0 1px 0 rgba(244,237,224,.06)}
+  .letterbox.bot{bottom:0;box-shadow:0 -1px 0 rgba(244,237,224,.06)}
   .grain{
     position:fixed;inset:-60px;z-index:190;pointer-events:none;opacity:.07;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
@@ -64,10 +53,8 @@
     font-weight:700;transition:opacity .5s;
   }
   .map-hud .mh-ticks{display:flex;gap:8px;margin-top:12px}
-  .map-hud .mh-ticks i{
-    width:22px;height:2px;background:rgba(232,236,244,.2);transition:background .5s;
-  }
-  .map-hud .mh-ticks i.on{background:var(--teal)}
+  .map-hud .mh-ticks i{width:22px;height:2px;background:rgba(244,237,224,.2);transition:background .5s}
+  .map-hud .mh-ticks i.on{background:var(--gold)}
   .rec{
     position:fixed;right:6vw;bottom:8vh;z-index:210;pointer-events:none;
     display:flex;align-items:center;gap:10px;
@@ -84,7 +71,7 @@
     position:fixed;top:calc(5vh + 14px);left:50%;transform:translateX(-50%);z-index:150;
     display:flex;gap:6px;padding:6px;
     border:1px solid var(--line);border-radius:99px;
-    background:rgba(5,6,10,.55);backdrop-filter:blur(10px);
+    background:rgba(10,7,4,.55);backdrop-filter:blur(10px);
   }
   .tabs a{
     font-size:11px;letter-spacing:.25em;text-transform:uppercase;
@@ -93,15 +80,14 @@
   }
   .tabs a:hover{color:var(--ink)}
   .tabs a.act{
-    color:#05060a;font-weight:700;
-    background:linear-gradient(90deg,var(--teal),var(--violet));
+    color:#0a0704;font-weight:700;
+    background:linear-gradient(90deg,var(--gold),var(--amber));
   }
 
   /* ---------- custom cursor ---------- */
   .cursor{
     position:fixed;top:0;left:0;z-index:9999;pointer-events:none;
-    width:10px;height:10px;border-radius:50%;
-    background:var(--teal);
+    width:10px;height:10px;border-radius:50%;background:var(--gold);
     transform:translate(-50%,-50%);
     transition:width .25s,height .25s,background .25s;
     mix-blend-mode:difference;
@@ -109,26 +95,24 @@
   .cursor-ring{
     position:fixed;top:0;left:0;z-index:9998;pointer-events:none;
     width:38px;height:38px;border-radius:50%;
-    border:1px solid rgba(57,240,212,.6);
+    border:1px solid rgba(255,209,102,.6);
     transform:translate(-50%,-50%);
     transition:width .3s,height .3s,border-color .3s;
   }
   body.hovering .cursor{width:60px;height:60px;background:#fff}
-  body.hovering .cursor-ring{width:80px;height:80px;border-color:rgba(139,92,246,.8)}
+  body.hovering .cursor-ring{width:80px;height:80px;border-color:rgba(247,127,0,.8)}
   @media (hover:none){ .cursor,.cursor-ring{display:none} body{cursor:auto} }
 
-  /* ---------- layout ---------- */
   main{position:relative;z-index:2}
   section{position:relative;padding:0 6vw}
 
-  /* ---------- nav ---------- */
   nav{
     position:fixed;top:5vh;left:0;right:0;z-index:100;
     display:flex;justify-content:space-between;align-items:center;
     padding:22px 6vw;
   }
-  .logo{font-weight:800;letter-spacing:.45em;font-size:14px;color:var(--ink)}
-  .logo b{color:var(--teal)}
+  .logo{font-weight:800;letter-spacing:.35em;font-size:14px;color:var(--ink)}
+  .logo b{color:var(--gold)}
   .nav-tag{
     font-size:11px;letter-spacing:.3em;color:var(--dim);
     border:1px solid var(--line);padding:8px 16px;border-radius:99px;
@@ -136,43 +120,36 @@
   }
   @keyframes pulseTag{
     0%,100%{border-color:var(--line)}
-    50%{border-color:rgba(57,240,212,.5);color:var(--teal)}
+    50%{border-color:rgba(255,209,102,.5);color:var(--gold)}
   }
 
   /* ---------- hero ---------- */
   .hero{
     min-height:100vh;
     display:flex;flex-direction:column;justify-content:center;align-items:center;
-    text-align:center;
-    perspective:900px;
+    text-align:center;perspective:900px;
   }
   .hero-kicker{
-    font-size:12px;letter-spacing:.55em;color:var(--teal);
+    font-size:12px;letter-spacing:.55em;color:var(--gold);
     text-transform:uppercase;margin-bottom:26px;
     opacity:0;animation:riseIn 1s .2s cubic-bezier(.2,.8,.2,1) forwards;
   }
   .hero-title{
-    font-size:clamp(88px,22vw,320px);
-    font-weight:900;line-height:.85;letter-spacing:-.02em;
-    position:relative;
-    transform-style:preserve-3d;
-    background:linear-gradient(180deg,#fff 30%,#5a6478 110%);
-    -webkit-background-clip:text;background-clip:text;
-    -webkit-text-fill-color:transparent;
+    font-size:clamp(48px,13vw,190px);
+    font-weight:900;line-height:.9;letter-spacing:-.01em;
+    position:relative;transform-style:preserve-3d;
+    background:linear-gradient(180deg,#fff 25%,#8a744f 110%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
     opacity:0;animation:riseIn 1.1s .35s cubic-bezier(.2,.8,.2,1) forwards;
   }
-  .hero-title .ghost{
-    position:absolute;inset:0;
-    -webkit-text-fill-color:transparent;
-    pointer-events:none;
-  }
+  .hero-title .ghost{position:absolute;inset:0;-webkit-text-fill-color:transparent;pointer-events:none}
   .hero-title .g1{
-    background:linear-gradient(180deg,var(--teal),transparent 70%);
+    background:linear-gradient(180deg,var(--gold),transparent 70%);
     -webkit-background-clip:text;background-clip:text;
     animation:glitchA 4s infinite steps(1);opacity:.9;
   }
   .hero-title .g2{
-    background:linear-gradient(180deg,var(--violet),transparent 70%);
+    background:linear-gradient(180deg,var(--amber),transparent 70%);
     -webkit-background-clip:text;background-clip:text;
     animation:glitchB 4s infinite steps(1);opacity:.9;
   }
@@ -193,11 +170,8 @@
     color:var(--dim);font-size:clamp(15px,1.6vw,19px);line-height:1.7;
     opacity:0;animation:riseIn 1s .6s cubic-bezier(.2,.8,.2,1) forwards;
   }
-  .hero-sub em{color:var(--ink);font-style:normal;border-bottom:1px solid var(--teal)}
-  @keyframes riseIn{
-    from{opacity:0;transform:translateY(46px)}
-    to{opacity:1;transform:translateY(0)}
-  }
+  .hero-sub em{color:var(--ink);font-style:normal;border-bottom:1px solid var(--gold)}
+  @keyframes riseIn{from{opacity:0;transform:translateY(46px)}to{opacity:1;transform:translateY(0)}}
   .scroll-hint{
     position:absolute;bottom:9vh;left:50%;transform:translateX(-50%);
     font-size:10px;letter-spacing:.4em;color:var(--dim);
@@ -206,7 +180,7 @@
   }
   .scroll-hint::after{
     content:"";width:1px;height:54px;
-    background:linear-gradient(180deg,var(--teal),transparent);
+    background:linear-gradient(180deg,var(--gold),transparent);
     animation:dropline 1.8s ease-in-out infinite;
   }
   @keyframes dropline{
@@ -222,38 +196,34 @@
     display:flex;flex-direction:column;justify-content:center;align-items:center;
     text-align:center;gap:3vh;
   }
-  .chapter .ch-num{
-    font-size:12px;letter-spacing:.7em;color:var(--dim);text-transform:uppercase;
-  }
+  .chapter .ch-num{font-size:12px;letter-spacing:.7em;color:var(--dim);text-transform:uppercase}
   .chapter .ch-name{
     font-size:clamp(44px,9vw,130px);font-weight:900;letter-spacing:.02em;line-height:1;
     -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
   }
-  .chapter[data-zone="0"] .ch-name{background-image:linear-gradient(120deg,#c8ffe9,var(--teal),#0e6b52)}
-  .chapter[data-zone="1"] .ch-name{background-image:linear-gradient(120deg,#eaf7ff,var(--ice),#1c5f9e)}
-  .chapter[data-zone="2"] .ch-name{background-image:linear-gradient(120deg,#efe3ff,var(--violet),#3d1e7a)}
-  .chapter[data-zone="3"] .ch-name{background-image:linear-gradient(120deg,#ffe3f4,var(--void),#7a1257)}
-  .chapter .ch-lore{
-    max-width:520px;color:var(--dim);font-size:clamp(15px,1.7vw,19px);line-height:1.8;
-  }
+  .chapter[data-zone="0"] .ch-name{background-image:linear-gradient(120deg,#fff3d6,var(--gold),#8a5a12)}
+  .chapter[data-zone="1"] .ch-name{background-image:linear-gradient(120deg,#d9fff4,var(--oasis),#0e6b52)}
+  .chapter[data-zone="2"] .ch-name{background-image:linear-gradient(120deg,#ffe9d6,var(--amber),#8a3c00)}
+  .chapter[data-zone="3"] .ch-name{background-image:linear-gradient(120deg,#fff,var(--gold),var(--amber))}
+  .chapter .ch-lore{max-width:520px;color:var(--dim);font-size:clamp(15px,1.7vw,19px);line-height:1.8}
   .chapter .ch-lore strong{color:var(--ink)}
   .chapter .ch-rule{
     width:1px;height:9vh;
-    background:linear-gradient(180deg,transparent,rgba(232,236,244,.35),transparent);
+    background:linear-gradient(180deg,transparent,rgba(244,237,224,.35),transparent);
   }
 
   /* ---------- marquee ---------- */
   .marquee{
     padding:0;overflow:hidden;white-space:nowrap;
     border-top:1px solid var(--line);border-bottom:1px solid var(--line);
-    background:rgba(5,6,10,.5);
+    background:rgba(10,7,4,.5);
   }
   .marquee-track{
     display:inline-block;padding:18px 0;
     font-size:13px;letter-spacing:.35em;color:var(--dim);text-transform:uppercase;
     animation:marquee 26s linear infinite;
   }
-  .marquee-track b{color:var(--teal);margin:0 10px}
+  .marquee-track b{color:var(--gold);margin:0 10px}
   @keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
   /* ---------- stats ---------- */
@@ -263,16 +233,12 @@
     border:1px solid var(--line);border-radius:20px;overflow:hidden;
     margin:14vh auto;max-width:1100px;
   }
-  .stat{
-    background:rgba(8,10,16,.85);padding:42px 34px;
-    transition:background .4s;
-  }
-  .stat:hover{background:rgba(57,240,212,.06)}
+  .stat{background:rgba(16,11,6,.85);padding:42px 34px;transition:background .4s}
+  .stat:hover{background:rgba(255,209,102,.06)}
   .stat .num{
     font-size:clamp(40px,5vw,64px);font-weight:800;
-    background:linear-gradient(120deg,var(--teal),var(--violet));
-    -webkit-background-clip:text;background-clip:text;
-    -webkit-text-fill-color:transparent;
+    background:linear-gradient(120deg,var(--gold),var(--amber));
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
   }
   .stat .lbl{margin-top:10px;font-size:11px;letter-spacing:.3em;color:var(--dim);text-transform:uppercase}
 
@@ -282,13 +248,10 @@
     font-size:clamp(34px,5.5vw,72px);font-weight:800;line-height:1.05;
     letter-spacing:-.02em;margin-bottom:8vh;
   }
-  .story h2 span{color:var(--teal)}
-  .story p{
-    font-size:clamp(17px,2vw,24px);line-height:1.85;color:var(--dim);
-    margin-bottom:5vh;
-  }
+  .story h2 span{color:var(--gold)}
+  .story p{font-size:clamp(17px,2vw,24px);line-height:1.85;color:var(--dim);margin-bottom:5vh}
   .story p strong{color:var(--ink);font-weight:600}
-  .story p .hl{color:var(--gold)}
+  .story p .hl{color:var(--oasis)}
   .reveal{
     opacity:0;transform:translateY(60px);
     transition:opacity 1s cubic-bezier(.2,.8,.2,1),transform 1s cubic-bezier(.2,.8,.2,1);
@@ -302,17 +265,16 @@
   }
   .card{
     width:min(460px,88vw);border-radius:26px;
-    background:linear-gradient(160deg,rgba(20,24,38,.9),rgba(8,10,16,.95));
-    border:1px solid rgba(57,240,212,.25);
+    background:linear-gradient(160deg,rgba(38,26,12,.9),rgba(16,11,6,.95));
+    border:1px solid rgba(255,209,102,.25);
     padding:44px 40px;
-    transform-style:preserve-3d;
-    transition:transform .12s ease-out;
+    transform-style:preserve-3d;transition:transform .12s ease-out;
     position:relative;
-    box-shadow:0 40px 120px rgba(0,0,0,.6),0 0 80px rgba(57,240,212,.08);
+    box-shadow:0 40px 120px rgba(0,0,0,.6),0 0 80px rgba(255,209,102,.08);
   }
   .card::before{
     content:"";position:absolute;inset:-1px;border-radius:26px;
-    background:linear-gradient(120deg,transparent 30%,rgba(57,240,212,.35) 48%,rgba(139,92,246,.35) 52%,transparent 70%);
+    background:linear-gradient(120deg,transparent 30%,rgba(255,209,102,.35) 48%,rgba(247,127,0,.35) 52%,transparent 70%);
     background-size:250% 250%;
     animation:sheen 5s linear infinite;
     z-index:-1;filter:blur(6px);
@@ -320,11 +282,11 @@
   @keyframes sheen{0%{background-position:0% 0%}100%{background-position:250% 250%}}
   .card > *{transform:translateZ(46px)}
   .card .rank{
-    display:inline-block;font-size:10px;letter-spacing:.4em;color:#05060a;
-    background:linear-gradient(90deg,var(--teal),var(--violet));
+    display:inline-block;font-size:10px;letter-spacing:.4em;color:#0a0704;
+    background:linear-gradient(90deg,var(--gold),var(--amber));
     padding:8px 16px;border-radius:99px;font-weight:700;
   }
-  .card h3{margin-top:26px;font-size:56px;font-weight:900;letter-spacing:.06em}
+  .card h3{margin-top:26px;font-size:42px;font-weight:900;letter-spacing:.04em}
   .card .role{color:var(--dim);font-size:13px;letter-spacing:.25em;margin-top:6px;text-transform:uppercase}
   .card .rows{margin-top:34px;display:grid;gap:16px}
   .card .row{
@@ -333,64 +295,54 @@
   }
   .card .row .k{color:var(--dim);letter-spacing:.15em;text-transform:uppercase;font-size:11px}
   .card .row .v{font-weight:600}
-  .card .row .v.t{color:var(--teal)}
-  .card .row .v.g{color:var(--gold)}
+  .card .row .v.t{color:var(--gold)}
+  .card .row .v.g{color:var(--oasis)}
   .card-hint{
     position:absolute;bottom:-52px;left:0;right:0;text-align:center;
     font-size:10px;letter-spacing:.4em;color:var(--dim);
   }
 
-  /* ---------- orbit visual ---------- */
-  .orbit-zone{
-    min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    text-align:center;gap:6vh;
+  /* ---------- fagbrev trophy ---------- */
+  .trophy-zone{
+    min-height:90vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;gap:5vh;perspective:1000px;
   }
-  .orbit{position:relative;width:min(420px,80vw);height:min(420px,80vw)}
-  .orbit .core{
-    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-    width:86px;height:86px;border-radius:50%;
-    background:radial-gradient(circle at 35% 35%,#fff,var(--teal) 40%,var(--violet));
-    box-shadow:0 0 60px rgba(57,240,212,.7),0 0 140px rgba(139,92,246,.4);
+  .achv{
+    display:flex;align-items:center;gap:22px;
+    border:1px solid rgba(255,209,102,.4);border-radius:20px;
+    padding:26px 40px;
+    background:linear-gradient(160deg,rgba(38,26,12,.9),rgba(16,11,6,.95));
+    position:relative;overflow:hidden;
+  }
+  .achv::after{
+    content:"";position:absolute;top:-50%;bottom:-50%;width:40%;
+    background:linear-gradient(100deg,transparent,rgba(255,255,255,.18),transparent);
+    animation:achvShine 3.2s ease-in-out infinite;
+  }
+  @keyframes achvShine{0%{left:-60%}60%,100%{left:130%}}
+  .achv .medal{
+    width:74px;height:74px;flex:none;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#fff6d8,var(--gold) 45%,var(--amber));
+    box-shadow:0 0 40px rgba(255,209,102,.6),0 0 110px rgba(247,127,0,.35);
     display:flex;align-items:center;justify-content:center;
-    font-weight:900;color:#05060a;font-size:13px;letter-spacing:.1em;
-    animation:corePulse 3s ease-in-out infinite;
+    font-size:30px;
+    animation:medalSpin 6s linear infinite;
   }
-  @keyframes corePulse{
-    0%,100%{box-shadow:0 0 60px rgba(57,240,212,.7),0 0 140px rgba(139,92,246,.4)}
-    50%{box-shadow:0 0 90px rgba(57,240,212,.95),0 0 200px rgba(139,92,246,.6)}
-  }
-  .ring{
-    position:absolute;top:50%;left:50%;
-    border:1px dashed rgba(232,236,244,.18);border-radius:50%;
-    transform:translate(-50%,-50%);
-  }
-  .r1{width:52%;height:52%;animation:spin 14s linear infinite}
-  .r2{width:76%;height:76%;animation:spin 26s linear infinite reverse}
-  .r3{width:100%;height:100%;animation:spin 40s linear infinite}
-  @keyframes spin{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(360deg)}}
-  .sat{
-    position:absolute;top:-7px;left:50%;
-    width:14px;height:14px;border-radius:50%;transform:translateX(-50%);
-  }
-  .r1 .sat{background:var(--gold);box-shadow:0 0 18px var(--gold)}
-  .r2 .sat{background:var(--teal);box-shadow:0 0 18px var(--teal)}
-  .r3 .sat{background:var(--violet);box-shadow:0 0 18px var(--violet)}
-  .orbit-caption{max-width:520px;color:var(--dim);line-height:1.8;font-size:16px}
-  .orbit-caption strong{color:var(--ink)}
+  @keyframes medalSpin{from{transform:rotateY(0)}to{transform:rotateY(360deg)}}
+  .achv .a-txt{text-align:left}
+  .achv .a-top{font-size:10px;letter-spacing:.4em;color:var(--gold);text-transform:uppercase}
+  .achv .a-big{font-size:clamp(24px,4vw,40px);font-weight:900;letter-spacing:.04em;margin-top:6px}
+  .achv .a-sub{font-size:12px;letter-spacing:.2em;color:var(--dim);margin-top:6px;text-transform:uppercase}
+  .trophy-caption{max-width:520px;color:var(--dim);line-height:1.8;font-size:16px}
+  .trophy-caption strong{color:var(--ink)}
 
   /* ---------- footer ---------- */
-  footer{
-    padding:12vh 6vw 14vh;text-align:center;
-    border-top:1px solid var(--line);
-  }
-  footer .big{
-    font-size:clamp(30px,6vw,80px);font-weight:900;letter-spacing:-.02em;line-height:1.1;
-  }
+  footer{padding:12vh 6vw 14vh;text-align:center;border-top:1px solid var(--line)}
+  footer .big{font-size:clamp(30px,6vw,80px);font-weight:900;letter-spacing:-.02em;line-height:1.1}
   footer .big span{
-    background:linear-gradient(90deg,var(--teal),var(--violet),var(--void));
+    background:linear-gradient(90deg,var(--gold),var(--amber),var(--oasis));
     background-size:200%;
-    -webkit-background-clip:text;background-clip:text;
-    -webkit-text-fill-color:transparent;
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
     animation:gradShift 5s ease-in-out infinite alternate;
   }
   @keyframes gradShift{from{background-position:0%}to{background-position:100%}}
@@ -407,114 +359,121 @@
 <div class="grain"></div>
 <div class="map-hud">
   <span>Now flying over</span>
-  <span class="mh-name" id="mhName">SUMMONER'S RIFT</span>
+  <span class="mh-name" id="mhName">SAHARA</span>
   <span class="mh-ticks" id="mhTicks"><i class="on"></i><i></i><i></i><i></i></span>
 </div>
-<div class="rec">REC · ALPHA CAM</div>
+<div class="rec">REC · SIGMA CAM</div>
 
 <div class="cursor"></div>
 <div class="cursor-ring"></div>
 
 <nav>
-  <div class="logo">A L P H <b>A</b></div>
-  <div class="nav-tag">STATUS · IN QUEUE</div>
+  <div class="logo">A L P H A <b>Σ</b></div>
+  <div class="nav-tag">STATUS · CERTIFIED</div>
 </nav>
 
 <div class="tabs">
-  <a href="index.html" class="act">Alpha</a>
-  <a href="alphasigma.html">AlphaSigma</a>
+  <a href="index.html">Alpha</a>
+  <a href="alphasigma.html" class="act">AlphaSigma</a>
 </div>
 
 <main>
 
-  <!-- HERO (zone 0) -->
+  <!-- HERO -->
   <section class="hero">
-    <div class="hero-kicker">Alger · 28 · Solo Queue</div>
+    <div class="hero-kicker">Pakistan · 26 · Habibi by choice</div>
     <h1 class="hero-title" id="title">
-      ALPHA
-      <span class="ghost g1">ALPHA</span>
-      <span class="ghost g2">ALPHA</span>
+      ALPHASIGMA
+      <span class="ghost g1">ALPHASIGMA</span>
+      <span class="ghost g2">ALPHASIGMA</span>
     </h1>
     <p class="hero-sub">
-      Én mann. Ett tastatur. <em>Null duo-partnere.</em><br>
-      Scroll for å fly gjennom banene hans — fra Rift til tomrommet og tilbake.
+      Pakistansk maskinvare. <em>Arabisk programvare.</em><br>
+      Fagbrevet er i boks, karaken er i koppen. Scroll — yalla, yalla.
     </p>
-    <div class="scroll-hint">SCROLL</div>
+    <div class="scroll-hint">YALLA</div>
   </section>
 
   <!-- CHAPTER I -->
   <section class="chapter" data-zone="0">
-    <div class="ch-num reveal">Kapittel I · Bane 01</div>
-    <div class="ch-name reveal">SUMMONER'S RIFT</div>
+    <div class="ch-num reveal">Kapittel I · Sone 01</div>
+    <div class="ch-name reveal">SAHARA</div>
     <div class="ch-rule reveal"></div>
     <p class="ch-lore reveal">
-      Her bor grinden. Tre laner, én elv, femti minutter om gangen.
-      Det er 5v5 på papiret — men <strong>Alpha teller alltid som én</strong>.
+      Alle store reiser starter i sanden. AlphaSigma sin startet i Pakistan —
+      men den indre GPS-en har <strong>alltid pekt mot Gulfen</strong>.
+      Noen er født arabere. Han valgte det. Wallah.
     </p>
   </section>
 
   <!-- MARQUEE -->
   <section class="marquee">
     <div class="marquee-track">
-      SOLO QUEUE <b>◆</b> IT BY DAY <b>◆</b> RIFT BY NIGHT <b>◆</b> ALGER · DZ <b>◆</b> NO DUO NEEDED <b>◆</b> 28 YEARS <b>◆</b> LONE WOLF <b>◆</b>
-      SOLO QUEUE <b>◆</b> IT BY DAY <b>◆</b> RIFT BY NIGHT <b>◆</b> ALGER · DZ <b>◆</b> NO DUO NEEDED <b>◆</b> 28 YEARS <b>◆</b> LONE WOLF <b>◆</b>
+      HABIBI ENERGY <b>◆</b> KARAK SUPREMACY <b>◆</b> FAGBREV UNLOCKED <b>◆</b> YALLA <b>◆</b> PK → AE <b>◆</b> 26 YEARS <b>◆</b> WALLAH CERTIFIED <b>◆</b>
+      HABIBI ENERGY <b>◆</b> KARAK SUPREMACY <b>◆</b> FAGBREV UNLOCKED <b>◆</b> YALLA <b>◆</b> PK → AE <b>◆</b> 26 YEARS <b>◆</b> WALLAH CERTIFIED <b>◆</b>
     </div>
   </section>
 
   <!-- STATS -->
   <section>
     <div class="stats">
-      <div class="stat reveal"><div class="num" data-count="28">0</div><div class="lbl">År gammel</div></div>
-      <div class="stat reveal"><div class="num" data-count="365">0</div><div class="lbl">Dager på Rift / år</div></div>
-      <div class="stat reveal"><div class="num" data-count="9000">0</div><div class="lbl">Timer i solo queue</div></div>
-      <div class="stat reveal"><div class="num" data-count="0">0</div><div class="lbl">Duo-partnere trengs</div></div>
+      <div class="stat reveal"><div class="num" data-count="26">0</div><div class="lbl">År gammel</div></div>
+      <div class="stat reveal"><div class="num" data-count="1">0</div><div class="lbl">Fagbrev — endelig</div></div>
+      <div class="stat reveal"><div class="num" data-count="4747">0</div><div class="lbl">Kopper karak i år</div></div>
+      <div class="stat reveal"><div class="num" data-count="100">0</div><div class="lbl">% habibi-energi</div></div>
     </div>
   </section>
 
   <!-- STORY -->
   <section class="story">
-    <h2 class="reveal">Noen spillere har et team.<br><span>Alpha har en misjon.</span></h2>
+    <h2 class="reveal">Noen er født arabere.<br><span>AlphaSigma valgte det.</span></h2>
     <p class="reveal">
-      <strong>Alpha, 28, fra Algerie.</strong> Om dagen holder han servere i live og fikser
-      ting ingen andre skjønner seg på — IT er faget, tålmodighet er våpenet.
-      Når klokka passerer midnatt, logger han på <span class="hl">Summoner's Rift</span>. Hver. Eneste. Dag.
+      <strong>AlphaSigma, 26.</strong> Passet sier Pakistan, hjertet sier Khaleeji.
+      Han sier «wallah» oftere enn folk som faktisk snakker arabisk,
+      og playlisten hans er 90 % arabisk — de siste 10 prosentene nekter han å diskutere.
     </p>
     <p class="reveal">
-      Han spiller ikke duo. Han venter ikke på at noen skal invitere ham.
-      Vennelisten er stille, og det er greit — <strong>solo queue er ærligste formen for League</strong>.
-      Ingen å skylde på. Ingen å gjemme seg bak. Bare deg, minionene og drømmen om neste rank.
+      Drivstoffet er <span class="hl">karak chai</span> — kopp nummer fire er bare oppvarming.
+      Drømmen har postnummer i Dubai Marina, og hver eneste story han poster
+      ser ut som en flyplassreklame for Emirates. <strong>Vi respekterer visjonen.</strong>
     </p>
     <p class="reveal">
-      Noen kaller det ensomt. Alpha kaller det <strong>fokus</strong>.
-      Mens andre bruker kveldene på støy, bygger han mekanikk, macro og mental —
-      én queue om gangen. <span class="hl">Grinden diskriminerer ikke. Den belønner den som møter opp.</span>
+      Uniformen? <strong>Genser.</strong> Sommer, vinter, eksamen, bryllup: genser.
+      Ikke spør hvorfor. Det er en del av mystikken —
+      en drakt-justering like innøvd som en pro-spillers recall. Signature move.
+    </p>
+    <p class="reveal">
+      Og i år skjedde det alle trodde var en myte:
+      etter en grind som fortjener sin egen dokumentarserie kom <strong>FAGBREVET</strong>.
+      Papiret er ekte. Stoltheten er ekte. <span class="hl">Rammen kostet mer enn pensumbøkene.</span>
     </p>
   </section>
 
   <!-- CHAPTER II -->
   <section class="chapter" data-zone="1">
-    <div class="ch-num reveal">Kapittel II · Bane 02</div>
-    <div class="ch-name reveal">HOWLING ABYSS</div>
+    <div class="ch-num reveal">Kapittel II · Sone 02</div>
+    <div class="ch-name reveal">OASEN</div>
     <div class="ch-rule reveal"></div>
     <p class="ch-lore reveal">
-      Isbroen. Ingen jungel å gjemme seg i, ingen recall uten grunn.
-      Én bro, én retning: <strong>framover</strong>. Akkurat slik Alpha liker det.
+      Karak-kopp nummer fire. Playlisten på full guff.
+      Her lader han opp mellom slagene — <strong>én slurk om gangen, habibi</strong>.
     </p>
   </section>
 
   <!-- 3D CARD -->
   <section class="card-zone">
     <div class="card reveal" id="card">
-      <span class="rank">SUMMONER PROFILE</span>
-      <h3>ALPHA</h3>
-      <div class="role">The Lone Carry</div>
+      <span class="rank">SIGMA PROFILE</span>
+      <h3>ALPHASIGMA</h3>
+      <div class="role">The Certified Habibi</div>
       <div class="rows">
-        <div class="row"><span class="k">Alder</span><span class="v">28</span></div>
-        <div class="row"><span class="k">Base</span><span class="v">Alger, Algerie 🇩🇿</span></div>
-        <div class="row"><span class="k">Klasse</span><span class="v t">IT-spesialist</span></div>
-        <div class="row"><span class="k">Daglig ritual</span><span class="v">League of Legends</span></div>
-        <div class="row"><span class="k">Kø-modus</span><span class="v g">Solo / Duo — alltid solo</span></div>
-        <div class="row"><span class="k">Squad</span><span class="v">Under rekruttering</span></div>
+        <div class="row"><span class="k">Alder</span><span class="v">26</span></div>
+        <div class="row"><span class="k">Opprinnelse</span><span class="v">Pakistan 🇵🇰</span></div>
+        <div class="row"><span class="k">Hjertet</span><span class="v t">Gulfen 🇦🇪 (mentalt)</span></div>
+        <div class="row"><span class="k">Klasse</span><span class="v g">Fagarbeider — sertifisert</span></div>
+        <div class="row"><span class="k">Drivstoff</span><span class="v">Karak chai</span></div>
+        <div class="row"><span class="k">Uniform</span><span class="v">Genser. Alltid genser.</span></div>
+        <div class="row"><span class="k">Achievement</span><span class="v t">FAGBREV ✓</span></div>
       </div>
       <div class="card-hint">BEVEG MUSEN OVER KORTET</div>
     </div>
@@ -522,53 +481,55 @@
 
   <!-- CHAPTER III -->
   <section class="chapter" data-zone="2">
-    <div class="ch-num reveal">Kapittel III · Bane 03</div>
-    <div class="ch-name reveal">TWISTED TREELINE</div>
+    <div class="ch-num reveal">Kapittel III · Sone 03</div>
+    <div class="ch-name reveal">VERKSTEDET</div>
     <div class="ch-rule reveal"></div>
     <p class="ch-lore reveal">
-      De gamle skogene, stengt og glemt av alle andre.
-      Glemte kart, glemte lagkamerater — men <strong>aldri glemte mekanikker</strong>.
-      Alpha husker alt.
+      Årevis med grind, én modul om gangen. Alle lo. Ingen ler nå.
+      <strong>Fagbrevet henger på veggen</strong> — skjevt, men det henger.
     </p>
   </section>
 
-  <!-- ORBIT -->
-  <section class="orbit-zone">
-    <div class="orbit reveal">
-      <div class="ring r1"><div class="sat"></div></div>
-      <div class="ring r2"><div class="sat"></div></div>
-      <div class="ring r3"><div class="sat"></div></div>
-      <div class="core">ALPHA</div>
+  <!-- TROPHY -->
+  <section class="trophy-zone">
+    <div class="achv reveal">
+      <div class="medal">🏆</div>
+      <div class="a-txt">
+        <div class="a-top">Achievement unlocked</div>
+        <div class="a-big">FAGBREV</div>
+        <div class="a-sub">Endelig · Wallah · Sertifisert</div>
+      </div>
     </div>
-    <p class="orbit-caption reveal">
-      Alt kretser rundt grinden: <strong>jobben</strong>, <strong>spillet</strong> og <strong>neste rank</strong>.
-      Én dag kommer det flere satellitter i bane. Frem til da holder kjernen seg brennende helt fint på egen hånd.
+    <p class="trophy-caption reveal">
+      Alt kretser rundt beviset: <strong>papiret på veggen</strong>, karaken i koppen
+      og drømmen om Marina. Han sa han skulle klare det. Han klarte det.
+      <strong>Mabrouk, habibi.</strong>
     </p>
   </section>
 
   <!-- CHAPTER IV -->
   <section class="chapter" data-zone="3">
-    <div class="ch-num reveal">Kapittel IV · Bane 04</div>
-    <div class="ch-name reveal">THE VOID</div>
+    <div class="ch-num reveal">Kapittel IV · Sone 04</div>
+    <div class="ch-name reveal">GOLDEN CITY</div>
     <div class="ch-rule reveal"></div>
     <p class="ch-lore reveal">
-      Der køen aldri popper og pingen er evig.
-      Alpha stirrer inn i tomrommet. <strong>Tomrommet blunker først.</strong>
+      Neste stopp: Dubai Marina. Kom til lands, kom til vanns —
+      <strong>AlphaSigma kommer uansett</strong>. Med genser. I 40 varmegrader.
     </p>
   </section>
 
   <!-- FOOTER -->
   <footer>
-    <div class="big reveal">Lone wolf i dag.<br><span>Legende i morgen.</span></div>
-    <div class="small">ALPHA · EST. 1998 · POWERED BY SOLO QUEUE</div>
+    <div class="big reveal">Wannabe i dag.<br><span>Wallah i morgen.</span></div>
+    <div class="small">ALPHASIGMA · EST. 2000 · POWERED BY KARAK</div>
   </footer>
 
 </main>
 
 <script>
 /* ============================================================
-   WebGL: roterende bane sett fra luften — scroll flyr deg
-   gjennom fire soner (Rift → Abyss → Treeline → Void)
+   WebGL: raymarched gyllen orken — scroll flyr deg gjennom
+   fire soner (Sahara → Oasen → Verkstedet → Golden City)
    ============================================================ */
 (function(){
   const canvas = document.getElementById('gl');
@@ -581,10 +542,10 @@
   `;
   const fs = `
     precision highp float;
-    uniform vec2 r;      // resolution
-    uniform float t;     // time
-    uniform vec2 m;      // mouse 0..1
-    uniform float s;     // scroll zone 0..3
+    uniform vec2 r;
+    uniform float t;
+    uniform vec2 m;
+    uniform float s;
 
     float w0,w1,w2,w3;
     vec2 tOff;
@@ -608,66 +569,73 @@
       float h=clamp(dot(pa,ba)/dot(ba,ba),0.,1.);
       return length(pa-ba*h);
     }
-    float sdCyl(vec3 p, float h, float rad){
-      vec2 d=abs(vec2(length(p.xz),p.y))-vec2(rad,h);
-      return min(max(d.x,d.y),0.)+length(max(d,0.));
+    float sdBox(vec3 p, vec3 b){
+      vec3 q=abs(p)-b;
+      return length(max(q,0.))+min(max(q.x,max(q.y,q.z)),0.);
     }
     float sdOct(vec3 p, float k){ p=abs(p); return (p.x+p.y+p.z-k)*.57735; }
 
-    // laner i banens grunnplan, blandet per sone
+    // ruter per sone: karavanesti, oaseringen, verkstedkrysset, gullringer
     float laneDist(vec2 q){
-      float d0=min(sdSeg(q,vec2(-.9),vec2(.9)),
-               min(min(sdSeg(q,vec2(-.7,-.7),vec2(-.7,.7)),sdSeg(q,vec2(-.7,.7),vec2(.7,.7))),
-                   min(sdSeg(q,vec2(-.7,-.7),vec2(.7,-.7)),sdSeg(q,vec2(.7,-.7),vec2(.7,.7)))));
-      float d1=sdSeg(q,vec2(-.9),vec2(.9));
-      float d2=min(min(sdSeg(q,vec2(-.75,.35),vec2(.75,.35)),sdSeg(q,vec2(-.75,-.35),vec2(.75,-.35))),
-                   abs(length(q)-.22));
+      float d0=min(sdSeg(q,vec2(-.9,-.9),vec2(0.,-.15)),sdSeg(q,vec2(0.,-.15),vec2(.9,.9)));
+      float d1=min(abs(length(q)-.55),sdSeg(q,vec2(.52,.52),vec2(.95,.95)));
+      float d2=min(sdSeg(q,vec2(-.85,0.),vec2(.85,0.)),sdSeg(q,vec2(0.,-.85),vec2(0.,.85)));
       float d3=abs(fract(length(q)*2.2-t*.12)-.5)/2.2;
       return w0*d0+w1*d1+w2*d2+w3*d3;
     }
-    float riverD(vec2 q){ return sdSeg(q,vec2(-.9,.9),vec2(.9,-.9)); }
+    float poolD(vec2 q){ return length(q)-.32; }
 
-    // hoydefelt: jungel + fjellrand rundt banen, laner og elv gravd flate
+    // dyner: mykt fbm-landskap + sandrand rundt, sti og oase gravd inn
     float terrainH(vec2 q){
-      float e=fbm(q*2.3+tOff);
-      float hgt=e*e*.55;
-      float rim=smoothstep(.55,1.3,length(q));
-      hgt+=rim*(.3+.3*fbm(q*3.1+tOff+7.));
-      hgt*=smoothstep(.015,.16,laneDist(q));
-      hgt-=w0*.07*smoothstep(.1,0.,riverD(q));
+      float e=fbm(q*1.7+tOff);
+      float hgt=e*e*.6;
+      float rim=smoothstep(.6,1.35,length(q));
+      hgt+=rim*(.28+.3*fbm(q*2.6+tOff+7.));
+      hgt*=smoothstep(.015,.15,laneDist(q));
+      float pool=smoothstep(.06,-.06,poolD(q));
+      hgt=mix(hgt,-.015,w1*pool);
       return hgt*.5;
     }
 
     vec2 opU(vec2 a, vec2 b){ return a.x<b.x?a:b; }
 
-    // taarn: sokkel + topp + glodende krystall (id 1 = stein, id 2 = krystall)
-    vec2 sdTurret(vec3 p, vec2 c){
+    // obelisk med gyllen topp (id 1 = stein, id 2 = gull)
+    vec2 sdObelisk(vec3 p, vec2 c){
       vec3 q=p-vec3(c.x,0.,c.y);
-      float b=min(sdCyl(q-vec3(0.,.1,0.),.1,.05), sdCyl(q-vec3(0.,.22,0.),.026,.07));
-      vec2 res=vec2(b,1.);
-      float g=sdOct(q-vec3(0.,.31,0.),.05);
+      vec2 res=vec2(sdBox(q-vec3(0.,.16,0.),vec3(.028,.16,.028)),1.);
+      float g=sdOct(q-vec3(0.,.36,0.),.045);
       if(g<res.x)res=vec2(g,2.);
       return res;
     }
 
-    // hele scenen: terreng + taarn + nexus + kjerne + minions
+    // scenen: dyner + pyramider + obelisker + fagbrev-trofe + karavane
     vec2 mapScene(vec3 p){
       vec2 res=vec2((p.y-terrainH(p.xz))*.5,0.);
-      res=opU(res,sdTurret(p,vec2(.52,.52)));
-      res=opU(res,sdTurret(p,vec2(-.52,-.52)));
-      res=opU(res,sdTurret(p,vec2(.24,.24)));
-      res=opU(res,sdTurret(p,vec2(-.24,-.24)));
-      vec3 q=p-vec3(.9,.36,.9); q.xz=rot2(t*.5)*q.xz;
-      float nx=sdOct(q,.15);
-      q=p-vec3(-.9,.36,-.9); q.xz=rot2(-t*.5)*q.xz;
-      nx=min(nx,sdOct(q,.15));
-      if(nx<res.x)res=vec2(nx,3.);
-      q=p-vec3(0.,.46+.06*sin(t*1.2),0.); q.xz=rot2(t*.8)*q.xz;
-      float cc=sdOct(q,.14);
+      // to store pyramider (halvt nedgravde oktaedre = perfekt pyramideform)
+      float py=sdOct(p-vec3(.55,-.02,-.55),.3);
+      py=min(py,sdOct(p-vec3(-.62,-.02,.5),.24));
+      if(py<res.x)res=vec2(py,1.);
+      res=opU(res,sdObelisk(p,vec2(.3,.3)));
+      res=opU(res,sdObelisk(p,vec2(-.3,-.3)));
+      res=opU(res,sdObelisk(p,vec2(-.62,-.62)));
+      // fagbrev-trofeet: svevende gullkrystall i sentrum
+      vec3 q=p-vec3(0.,.5+.06*sin(t*1.2),0.); q.xz=rot2(t*.7)*q.xz;
+      float cc=sdOct(q,.15);
       if(cc<res.x)res=vec2(cc,3.);
-      float u1=fract(t*.06), u2=fract(t*.05+.4);
-      float mn=length(p-vec3(mix(-.85,.85,u1),.045,mix(-.85,.85,u1)))-.032;
-      mn=min(mn,length(p-vec3(mix(.85,-.85,u2),.045,mix(.85,-.85,u2)))-.032);
+      // to smaa vaktkrystaller i bane rundt trofeet
+      vec3 o1=vec3(cos(t*.9)*.34,.5,sin(t*.9)*.34);
+      float sm=sdOct(p-o1,.05);
+      vec3 o2=vec3(cos(t*.9+3.14)*.34,.5,sin(t*.9+3.14)*.34);
+      sm=min(sm,sdOct(p-o2,.05));
+      if(sm<res.x)res=vec2(sm,3.);
+      // karavane langs stien
+      float u1=fract(t*.05), u2=fract(t*.05+.12), u3=fract(t*.05+.24);
+      vec2 c1=u1<.5?mix(vec2(-.9,-.9),vec2(0.,-.15),u1*2.):mix(vec2(0.,-.15),vec2(.9,.9),(u1-.5)*2.);
+      vec2 c2=u2<.5?mix(vec2(-.9,-.9),vec2(0.,-.15),u2*2.):mix(vec2(0.,-.15),vec2(.9,.9),(u2-.5)*2.);
+      vec2 c3=u3<.5?mix(vec2(-.9,-.9),vec2(0.,-.15),u3*2.):mix(vec2(0.,-.15),vec2(.9,.9),(u3-.5)*2.);
+      float mn=length(p-vec3(c1.x,.05,c1.y))-.035;
+      mn=min(mn,length(p-vec3(c2.x,.045,c2.y))-.03);
+      mn=min(mn,length(p-vec3(c3.x,.04,c3.y))-.026);
       if(mn<res.x)res=vec2(mn,3.);
       return res;
     }
@@ -682,13 +650,12 @@
 
     vec3 skyCol(vec3 rd){
       float hz=clamp(rd.y,0.,1.);
-      vec3 c=mix(vec3(.035,.045,.09),vec3(.004,.006,.016),pow(hz,.45));
-      c+=highC*.14*fbm(rd.xy*3.2+vec2(t*.015,0.))*(1.-hz);
-      c+=sunC*.05*pow(1.-hz,4.);
+      vec3 c=mix(vec3(.12,.06,.03),vec3(.006,.005,.012),pow(hz,.45));
+      c+=highC*.13*fbm(rd.xy*3.2+vec2(t*.015,0.))*(1.-hz);
+      c+=sunC*.09*pow(1.-hz,4.);
       return c;
     }
 
-    // analytisk bloom rundt lyspunkter
     float glowP(vec3 ro, vec3 rd, vec3 c){
       vec3 w=c-ro;
       float proj=max(dot(w,rd),0.);
@@ -697,20 +664,19 @@
     }
 
     void main(){
-      // sone-vekter (0=Rift 1=Abyss 2=Treeline 3=Void)
+      // soner: 0=Sahara 1=Oasen 2=Verkstedet 3=Golden City
       w0=clamp(1.-abs(s-0.),0.,1.);
       w1=clamp(1.-abs(s-1.),0.,1.);
       w2=clamp(1.-abs(s-2.),0.,1.);
       w3=clamp(1.-abs(s-3.),0.,1.);
       tOff=w1*vec2(13.7,7.3)+w2*vec2(27.2,3.1)+w3*vec2(5.5,19.9);
-      deepC=w0*vec3(.02,.09,.055)+w1*vec3(.03,.06,.13)+w2*vec3(.06,.02,.09)+w3*vec3(.06,.01,.08);
-      highC=w0*vec3(.16,.5,.3)+w1*vec3(.42,.62,.85)+w2*vec3(.44,.26,.55)+w3*vec3(.68,.16,.58);
-      laneC=w0*vec3(.2,.95,.7)+w1*vec3(.5,.85,1.)+w2*vec3(.75,.45,1.)+w3*vec3(1.,.25,.8);
-      sunC =w0*vec3(1.,.95,.85)+w1*vec3(.75,.9,1.1)+w2*vec3(.9,.75,1.05)+w3*vec3(1.05,.7,.95);
+      deepC=w0*vec3(.14,.09,.05)+w1*vec3(.04,.1,.06)+w2*vec3(.06,.055,.07)+w3*vec3(.09,.05,.11);
+      highC=w0*vec3(.85,.6,.3)+w1*vec3(.32,.6,.36)+w2*vec3(.42,.4,.48)+w3*vec3(.72,.5,.24);
+      laneC=w0*vec3(1.,.78,.32)+w1*vec3(.3,.95,.7)+w2*vec3(1.,.55,.2)+w3*vec3(1.,.85,.4);
+      sunC =w0*vec3(1.1,.9,.65)+w1*vec3(1.,.95,.8)+w2*vec3(.9,.85,.95)+w3*vec3(1.,.8,.55);
 
       vec2 uv=(gl_FragCoord.xy-.5*r)/r.y;
 
-      // kamera i bane rundt kartet — ekte 3D-rotasjon
       float a=t*.11+(m.x-.5)*.7;
       float ch=1.5-(m.y-.5)*.35;
       vec3 ro=vec3(2.65*cos(a),ch,2.65*sin(a));
@@ -722,7 +688,7 @@
 
       vec3 col;
       if(rd.y>-.02){
-        col=skyCol(rd);            // over horisonten: bare himmel
+        col=skyCol(rd);
       }else{
         float d=0., id=-1.;
         for(int i=0;i<72;i++){
@@ -737,32 +703,33 @@
         }else{
           vec3 p=ro+rd*d;
           vec3 n=calcN(p);
-          vec3 sun=normalize(vec3(-.55,.75,.35));
+          vec3 sun=normalize(vec3(-.55,.7,.35));
           float dif=clamp(dot(n,sun),0.,1.);
           float amb=.38+.38*clamp(n.y,0.,1.);
           float ao=clamp(mapScene(p+n*.1).x/.1,0.,1.);
           if(id<.5){
-            // terreng med detaljtekstur, laneglod og elv
+            // sand med dynestriper, sti-glod og oasevann
             float hh=terrainH(p.xz);
-            vec3 alb=mix(deepC,highC,clamp(hh*3.4,0.,1.));
-            alb*=.8+.4*fbm(p.xz*11.+tOff);
+            vec3 alb=mix(deepC,highC,clamp(hh*3.2+.15,0.,1.));
+            alb*=.82+.18*sin((p.x+p.z)*46.+fbm(p.xz*5.+tOff)*9.);
+            alb*=.85+.3*fbm(p.xz*11.+tOff);
             float ld=laneDist(p.xz);
-            float rv=riverD(p.xz);
-            float wat=w0*smoothstep(.08,.025,rv);
-            vec3 wc=vec3(.04,.22,.4)*(.8+.35*sin(p.x*26.-t*1.8)+.2*sin(p.z*31.+t*2.3));
+            float pl=poolD(p.xz);
+            float wat=w1*smoothstep(.04,-.02,pl);
+            vec3 wc=vec3(.05,.3,.32)*(.8+.3*sin(p.x*24.-t*1.6)+.2*sin(p.z*29.+t*2.1));
             alb=mix(alb,wc,wat);
-            col=alb*(dif*sunC+amb*vec3(.3,.4,.55));
-            col+=laneC*exp(-ld*24.)*1.25;
-            col+=wat*vec3(.5,.75,1.)*pow(clamp(dot(reflect(rd,n),sun),0.,1.),18.);
+            col=alb*(dif*sunC+amb*vec3(.35,.32,.3));
+            col+=laneC*exp(-ld*24.)*1.1;
+            col+=wat*vec3(.6,.9,.85)*pow(clamp(dot(reflect(rd,n),sun),0.,1.),18.);
           }else if(id<1.5){
-            // taarnstein
-            vec3 alb=mix(vec3(.32,.35,.44),highC,.3);
-            col=alb*(dif*sunC+amb*vec3(.28,.38,.52));
-            col+=pow(clamp(dot(reflect(rd,n),sun),0.,1.),24.)*sunC*.35;
+            // pyramide- og obeliskstein med sandtone
+            vec3 alb=mix(vec3(.5,.4,.28),highC,.35);
+            col=alb*(dif*sunC+amb*vec3(.32,.28,.26));
+            col+=pow(clamp(dot(reflect(rd,n),sun),0.,1.),24.)*sunC*.3;
           }else{
-            // emissive krystaller/minions med fresnel
+            // gullkrystaller med fresnel
             float fres=pow(1.-clamp(dot(-rd,n),0.,1.),2.);
-            col=laneC*(1.15+fres*1.5)+vec3(.22);
+            col=laneC*(1.15+fres*1.5)+vec3(.22,.16,.06);
           }
           col*=.5+.5*ao;
           float fo=1.-exp(-d*.15);
@@ -770,9 +737,9 @@
         }
       }
 
-      // bloom rundt kjernen og nexusene
-      col+=laneC*.55*glowP(ro,rd,vec3(0.,.5,0.));
-      col+=laneC*.3*(glowP(ro,rd,vec3(.9,.4,.9))+glowP(ro,rd,vec3(-.9,.4,-.9)));
+      // bloom rundt trofeet og pyramidetoppene
+      col+=laneC*.55*glowP(ro,rd,vec3(0.,.55,0.));
+      col+=laneC*.25*(glowP(ro,rd,vec3(.55,.35,-.55))+glowP(ro,rd,vec3(-.62,.3,.5)));
 
       col=pow(max(col,0.),vec3(.92));
       col*=1.-.42*dot(uv,uv);
@@ -809,7 +776,6 @@
     mx=e.clientX/innerWidth; my=1-e.clientY/innerHeight;
   });
 
-  /* ---- scroll → sone: kapitlene er ankerpunkter ---- */
   const chapters=[...document.querySelectorAll('.chapter')];
   let bps=[];
   function measure(){
@@ -818,7 +784,7 @@
   let zone=0, zoneTarget=0;
   function onScroll(){
     const sc=scrollY;
-    if(sc<=bps[0]){ zoneTarget=Math.max(0,(sc/bps[0]))*0.0; }
+    if(sc<=bps[0]){ zoneTarget=0; }
     else if(sc>=bps[3]){ zoneTarget=3; }
     else{
       for(let i=0;i<3;i++){
@@ -832,15 +798,14 @@
   addEventListener('scroll',onScroll,{passive:true});
 
   function resize(){
-    const d=Math.min(devicePixelRatio||1,1.3)*.8;   // raymarching er tungt — render litt lavere og la GPU-en skalere
+    const d=Math.min(devicePixelRatio||1,1.3)*.8;
     canvas.width=innerWidth*d; canvas.height=innerHeight*d;
     gl.viewport(0,0,canvas.width,canvas.height);
     measure(); onScroll();
   }
   addEventListener('resize',resize); resize();
 
-  /* ---- HUD ---- */
-  const names=["SUMMONER'S RIFT","HOWLING ABYSS","TWISTED TREELINE","THE VOID"];
+  const names=["SAHARA","OASEN","VERKSTEDET","GOLDEN CITY"];
   const mhName=document.getElementById('mhName');
   const ticks=[...document.getElementById('mhTicks').children];
   let hudIdx=0;
@@ -857,7 +822,7 @@
   const t0=performance.now();
   (function frame(){
     smx+=(mx-smx)*.05; smy+=(my-smy)*.05;
-    zone+=(zoneTarget-zone)*.045;           // myk cinematic overgang
+    zone+=(zoneTarget-zone)*.045;
     hud(zone);
     gl.uniform2f(uR,canvas.width,canvas.height);
     gl.uniform1f(uT,(performance.now()-t0)/1000);
@@ -868,7 +833,7 @@
   })();
 })();
 
-/* ================= particle starfield ================= */
+/* ================= particle sandstorm/stars ================= */
 (function(){
   const c=document.getElementById('stars'), x=c.getContext('2d');
   let W,H,parts=[];
@@ -878,7 +843,7 @@
     parts=Array.from({length:n},()=>({
       x:Math.random()*W, y:Math.random()*H,
       z:Math.random()*.8+.2,
-      vx:(Math.random()-.5)*.15, vy:-(Math.random()*.25+.05),
+      vx:(Math.random()*.3+.08), vy:-(Math.random()*.12+.02),
       tw:Math.random()*Math.PI*2
     }));
   }
@@ -888,11 +853,11 @@
     for(const p of parts){
       p.x+=p.vx; p.y+=p.vy; p.tw+=.03;
       if(p.y<-4){p.y=H+4;p.x=Math.random()*W}
-      if(p.x<-4)p.x=W+4; if(p.x>W+4)p.x=-4;
+      if(p.x>W+4)p.x=-4;
       const a=(Math.sin(p.tw)*.4+.6)*p.z;
       x.beginPath();
-      x.arc(p.x,p.y,p.z*1.6,0,7);
-      x.fillStyle=`rgba(180,240,255,${a*.8})`;
+      x.arc(p.x,p.y,p.z*1.5,0,7);
+      x.fillStyle=`rgba(255,230,180,${a*.7})`;
       x.fill();
     }
     requestAnimationFrame(frame);
@@ -912,7 +877,7 @@
     ring.style.left=rx+'px'; ring.style.top=ry+'px';
     requestAnimationFrame(frame);
   })();
-  document.querySelectorAll('.card,.stat,.logo,.nav-tag,.tabs a').forEach(el=>{
+  document.querySelectorAll('.card,.stat,.logo,.nav-tag,.tabs a,.achv').forEach(el=>{
     el.addEventListener('pointerenter',()=>document.body.classList.add('hovering'));
     el.addEventListener('pointerleave',()=>document.body.classList.remove('hovering'));
   });
