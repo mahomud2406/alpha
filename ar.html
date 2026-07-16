@@ -9,7 +9,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="AR Fest">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20180%20180'%3E%3Cdefs%3E%3ClinearGradient%20id='g'%20x1='0'%20y1='0'%20x2='1'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%2339f0d4'/%3E%3Cstop%20offset='.5'%20stop-color='%238b5cf6'/%3E%3Cstop%20offset='1'%20stop-color='%23f5c451'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width='180'%20height='180'%20rx='40'%20fill='%23070a12'/%3E%3Ccircle%20cx='90'%20cy='74'%20r='40'%20fill='url(%23g)'/%3E%3Ccircle%20cx='78'%20cy='68'%20r='6'%20fill='%23070a12'/%3E%3Ccircle%20cx='102'%20cy='68'%20r='6'%20fill='%23070a12'/%3E%3Cpath%20d='M74%2086%20q16%2014%2032%200'%20stroke='%23070a12'%20stroke-width='6'%20fill='none'%20stroke-linecap='round'/%3E%3Crect%20x='72'%20y='120'%20width='36'%20height='40'%20rx='10'%20fill='url(%23g)'/%3E%3C/svg%3E">
-<title>ALPHA AR — Dansefest</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Ccircle%20cx='32'%20cy='32'%20r='30'%20fill='%238b5cf6'/%3E%3C/svg%3E">
+<title>ALPHA AR — 3D Dansefest</title>
 <style>
   :root{
     --bg:#05060a; --ink:#eef1f7; --dim:#9aa3b6;
@@ -35,11 +36,44 @@
 
   #cam{
     position:absolute;inset:0;width:100%;height:100%;
-    object-fit:cover;background:#000;z-index:0;
-    transform:scaleX(1);
+    object-fit:cover;background:transparent;z-index:0;display:none;
   }
+  #cam.live{display:block}
   #cam.mirror{transform:scaleX(-1)}
-  #stage{position:absolute;inset:0;width:100%;height:100%;z-index:1;touch-action:manipulation}
+  /* fallback-scene bak robotene naar kamera mangler */
+  #fallbackBg{
+    position:absolute;inset:0;z-index:0;
+    background:
+      radial-gradient(130% 100% at 50% 0%,rgba(139,92,246,.28),transparent 55%),
+      radial-gradient(120% 90% at 15% 100%,rgba(57,240,212,.16),transparent 55%),
+      radial-gradient(120% 90% at 85% 100%,rgba(245,196,81,.14),transparent 55%),
+      #05060a;
+  }
+  #gl3d{position:absolute;inset:0;width:100%;height:100%;z-index:1;touch-action:none}
+  #overlay{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden}
+
+  .nametag{
+    position:absolute;transform:translate(-50%,-50%);
+    font-size:13px;font-weight:700;letter-spacing:.06em;
+    padding:4px 12px;border-radius:99px;color:#fff;
+    background:rgba(8,10,18,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    border:1px solid rgba(255,255,255,.18);white-space:nowrap;
+    text-shadow:0 1px 6px rgba(0,0,0,.7);transition:opacity .3s;
+  }
+  .bubble{
+    position:absolute;transform:translate(-50%,-100%);
+    max-width:min(66vw,300px);
+    background:rgba(255,255,255,.97);color:#12141c;
+    font-size:15px;font-weight:500;line-height:1.4;
+    padding:10px 14px;border-radius:16px;
+    box-shadow:0 8px 30px rgba(0,0,0,.45);
+    opacity:0;transition:opacity .25s;white-space:pre-wrap;
+  }
+  .bubble::after{
+    content:"";position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);
+    border:10px solid transparent;border-top-color:rgba(255,255,255,.97);border-bottom:none;
+  }
+  .bubble.think{color:#6a7186;font-style:italic}
 
   /* ---------- top bar ---------- */
   .top{
@@ -78,9 +112,9 @@
     background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   }
   .tabs a{
-    font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
-    padding:8px 14px;border-radius:99px;text-decoration:none;font-weight:600;
-    min-height:32px;display:flex;align-items:center;
+    font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
+    padding:8px 13px;border-radius:99px;text-decoration:none;font-weight:600;
+    min-height:32px;display:flex;align-items:center;white-space:nowrap;
   }
   .tabs a.act{color:#05060a;background:linear-gradient(90deg,var(--teal),var(--gold))}
 
@@ -123,7 +157,7 @@
   .veil{
     position:absolute;inset:0;z-index:20;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:20px;text-align:center;padding:8vh 28px calc(env(safe-area-inset-bottom) + 28px);
+    gap:18px;text-align:center;padding:8vh 28px calc(env(safe-area-inset-bottom) + 28px);
     background:radial-gradient(120% 90% at 50% 12%,rgba(139,92,246,.22),transparent 60%),var(--bg);
   }
   .veil.hide{display:none}
@@ -148,6 +182,10 @@
     box-shadow:0 14px 40px rgba(57,240,212,.35);transition:transform .12s;
   }
   .veil .go:active{transform:scale(.95)}
+  .veil .alt{
+    min-height:44px;padding:0 22px;border:1px solid var(--stroke);border-radius:16px;cursor:pointer;
+    background:transparent;color:var(--dim);font-size:14px;font-weight:600;
+  }
   .veil .fine{font-size:12px;color:var(--dim);letter-spacing:.03em;max-width:380px}
   .veil .err{color:#ff6b81;font-size:14px;min-height:18px;max-width:420px}
 
@@ -158,7 +196,7 @@
     background:var(--panel);border:1px solid var(--stroke);border-radius:14px;
     backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
     padding:10px 18px;font-size:14px;font-weight:600;max-width:88vw;text-align:center;
-    transition:opacity .3s,transform .3s;
+    transition:opacity .3s,transform .3s;color:var(--ink);
   }
   .toast.show{opacity:1;transform:translate(-50%,0)}
 
@@ -182,7 +220,7 @@
   }
   .sheet-bg.show{display:flex}
   .sheet{
-    width:100%;max-width:520px;
+    width:100%;max-width:520px;max-height:86vh;overflow:auto;
     background:var(--bg);border:1px solid var(--stroke);
     border-radius:24px 24px 0 0;
     padding:20px 22px calc(env(safe-area-inset-bottom) + 22px);
@@ -190,7 +228,7 @@
   }
   .sheet h2{font-size:18px;font-weight:800;margin-bottom:4px}
   .sheet .sub{font-size:13px;color:var(--dim);margin-bottom:18px}
-  .field{margin-bottom:16px}
+  .field{margin-bottom:14px}
   .field label{display:block;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
   .field input{
     width:100%;min-height:48px;padding:0 16px;border-radius:14px;
@@ -199,8 +237,9 @@
   .toggle{display:flex;align-items:center;justify-content:space-between;
     min-height:48px;padding:0 4px;border-bottom:1px solid var(--stroke)}
   .toggle span{font-size:15px;font-weight:600}
+  .toggle small{display:block;font-weight:400;color:var(--dim);font-size:12px;margin-top:2px}
   .sw{width:52px;height:30px;border-radius:99px;background:var(--btn);position:relative;cursor:pointer;
-    border:1px solid var(--stroke);transition:background .2s}
+    border:1px solid var(--stroke);transition:background .2s;flex:none}
   .sw.on{background:linear-gradient(90deg,var(--teal),var(--violet))}
   .sw i{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;
     transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.4)}
@@ -217,8 +256,10 @@
 </head>
 <body>
 
+<div id="fallbackBg"></div>
 <video id="cam" playsinline autoplay muted></video>
-<canvas id="stage"></canvas>
+<canvas id="gl3d"></canvas>
+<div id="overlay"></div>
 
 <div class="top">
   <div class="brand"><span class="dot"></span><b>ALPHA <span>AR</span></b></div>
@@ -247,556 +288,740 @@
     <button class="btn icon" id="btnSet" title="Innstillinger"><span class="ic">⚙️</span></button>
   </div>
   <div class="chatrow">
-    <input id="chatInput" type="text" placeholder="Si noe til figurene…" autocomplete="off" enterkeyhint="send">
+    <input id="chatInput" type="text" placeholder="Si noe til robotene…" autocomplete="off" enterkeyhint="send">
     <button class="send" id="chatSend" aria-label="Send">➤</button>
   </div>
 </div>
 
 <div class="veil" id="veil">
-  <div class="mascot">🕺</div>
-  <h1>Bli med på <span>dansefesten</span></h1>
-  <p>Pek kameraet ut i rommet, så dukker det opp neon-kompiser foran deg. Snakk med dem, spill musikk — så danser de til lyden. Wallah, de gir seg aldri.</p>
-  <button class="go" id="btnStart">🎬 Start kamera</button>
+  <div class="mascot">🤖</div>
+  <h1>Ekte 3D <span>dansefest</span></h1>
+  <p>Tre neon-roboter i full 3D lander i rommet ditt. De danser til musikken din, svarer når du snakker — og med gyroen kikker du rundt dem som om de faktisk står der.</p>
+  <button class="go" id="btnStart">🎬 Start AR-fest</button>
+  <button class="alt" id="btnNoCam">Prøv uten kamera</button>
   <div class="err" id="veilErr"></div>
-  <div class="fine">Krever tilgang til kamera og mikrofon. Alt skjer lokalt på telefonen din — ingenting lastes opp noe sted.</div>
+  <div class="fine">Kamera og mikrofon behandles kun lokalt på telefonen. AI-svar bruker et gratis, åpent API — kan skrus av i ⚙️.</div>
 </div>
 
 <div class="sheet-bg" id="sheetBg">
   <div class="sheet">
     <h2>Innstillinger</h2>
-    <div class="sub">Gi kompisene navn og styr festen.</div>
-    <div class="field"><label>Navn på figur 1</label><input id="nm0" maxlength="14"></div>
-    <div class="field"><label>Navn på figur 2</label><input id="nm1" maxlength="14"></div>
-    <div class="field"><label>Navn på figur 3</label><input id="nm2" maxlength="14"></div>
+    <div class="sub">Gi robotene navn og styr festen.</div>
+    <div class="field"><label>Navn på robot 1</label><input id="nm0" maxlength="14"></div>
+    <div class="field"><label>Navn på robot 2</label><input id="nm1" maxlength="14"></div>
+    <div class="field"><label>Navn på robot 3</label><input id="nm2" maxlength="14"></div>
     <div class="toggle"><span>Dans til lyd</span><div class="sw" id="swSound"><i></i></div></div>
-    <div class="toggle"><span>Figurene snakker</span><div class="sw" id="swSpeak"><i></i></div></div>
+    <div class="toggle"><span>Robotene snakker<small>Talesyntese på norsk</small></span><div class="sw" id="swSpeak"><i></i></div></div>
+    <div class="toggle"><span>Smart AI-svar<small>Gratis åpent API (Pollinations) — uten nøkkel</small></span><div class="sw" id="swAI"><i></i></div></div>
+    <div class="toggle"><span>Gyro-parallakse<small>Kikk rundt robotene</small></span><div class="sw" id="swGyro"><i></i></div></div>
     <div class="toggle"><span>Speil frontkamera</span><div class="sw" id="swMirror"><i></i></div></div>
     <button class="close" id="sheetClose">Ferdig</button>
     <button class="reset" id="sheetReset">Nullstill alt</button>
   </div>
 </div>
 
-<script>
+<script type="module">
+import * as THREE from './vendor/three.module.min.js';
+
+const $=s=>document.querySelector(s);
+const cam=$('#cam'), overlay=$('#overlay'), energyBar=$('#energyBar');
+
+/* ============ persistent state ============ */
+const LS={
+  get(k,d){try{const v=localStorage.getItem('arfest.'+k);return v==null?d:JSON.parse(v);}catch(e){return d;}},
+  set(k,v){try{localStorage.setItem('arfest.'+k,JSON.stringify(v));}catch(e){}}
+};
+const settings=Object.assign(
+  {sound:true,speak:true,ai:true,gyro:true,mirror:true,facing:'environment'},
+  LS.get('set',{})
+);
+let names=LS.get('names',['Alpha','Sigma','Beta']);
+
+/* ============ manifest as data-URI ============ */
 (function(){
-  "use strict";
-  const $ = s => document.querySelector(s);
-  const cam = $('#cam'), stage = $('#stage'), ctx = stage.getContext('2d');
-  const energyBar = $('#energyBar');
-
-  /* ============ persistent state (localStorage) ============ */
-  const LS = {
-    get(k,d){ try{ const v=localStorage.getItem('arfest.'+k); return v==null?d:JSON.parse(v);}catch(e){return d;} },
-    set(k,v){ try{ localStorage.setItem('arfest.'+k,JSON.stringify(v)); }catch(e){} }
+  const icon="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20512%20512'%3E%3Cdefs%3E%3ClinearGradient%20id='g'%20x1='0'%20y1='0'%20x2='1'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%2339f0d4'/%3E%3Cstop%20offset='.5'%20stop-color='%238b5cf6'/%3E%3Cstop%20offset='1'%20stop-color='%23f5c451'/%3E%3C/defs%3E%3C/defs%3E%3Crect%20width='512'%20height='512'%20rx='112'%20fill='%23070a12'/%3E%3Ccircle%20cx='256'%20cy='210'%20r='112'%20fill='url(%23g)'/%3E%3Crect%20x='206'%20y='340'%20width='100'%20height='112'%20rx='28'%20fill='url(%23g)'/%3E%3C/svg%3E";
+  const manifest={
+    name:"ALPHA AR — 3D Dansefest",short_name:"AR Fest",
+    description:"Live 3D AR-roboter som danser til lyd og svarer deg.",
+    start_url:"./ar.html",scope:"./",display:"standalone",
+    background_color:"#05060a",theme_color:"#05060a",lang:"no",orientation:"portrait",
+    icons:[{src:icon,sizes:"512x512",type:"image/svg+xml",purpose:"any"},
+           {src:icon,sizes:"512x512",type:"image/svg+xml",purpose:"maskable"}]
   };
-  const settings = Object.assign(
-    { sound:true, speak:true, mirror:true, facing:'environment', hs:0 },
-    LS.get('set',{})
-  );
-  let names = LS.get('names', ['Alpha','Sigma','Beta']);
+  const link=document.createElement('link');
+  link.rel='manifest';
+  link.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(manifest));
+  document.head.appendChild(link);
+})();
 
-  /* ============ web app manifest as data-URI (single file) ============ */
-  (function(){
-    const icon = "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20512%20512'%3E%3Cdefs%3E%3ClinearGradient%20id='g'%20x1='0'%20y1='0'%20x2='1'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%2339f0d4'/%3E%3Cstop%20offset='.5'%20stop-color='%238b5cf6'/%3E%3Cstop%20offset='1'%20stop-color='%23f5c451'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width='512'%20height='512'%20rx='112'%20fill='%23070a12'/%3E%3Ccircle%20cx='256'%20cy='210'%20r='112'%20fill='url(%23g)'/%3E%3Crect%20x='206'%20y='340'%20width='100'%20height='112'%20rx='28'%20fill='url(%23g)'/%3E%3C/svg%3E";
-    const manifest = {
-      name:"ALPHA AR — Dansefest", short_name:"AR Fest",
-      description:"Live AR-figurer som danser til lyd og snakker tilbake.",
-      start_url:"./ar.html", scope:"./", display:"standalone",
-      background_color:"#05060a", theme_color:"#05060a", lang:"no",
-      orientation:"portrait",
-      icons:[
-        {src:icon,sizes:"512x512",type:"image/svg+xml",purpose:"any"},
-        {src:icon,sizes:"512x512",type:"image/svg+xml",purpose:"maskable"}
-      ]
-    };
-    const link=document.createElement('link');
-    link.rel='manifest';
-    link.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(manifest));
-    document.head.appendChild(link);
-  })();
+/* ============ toast ============ */
+const toast=$('#toast');let toastT=0;
+function say(msg){toast.textContent=msg;toast.classList.add('show');
+  clearTimeout(toastT);toastT=setTimeout(()=>toast.classList.remove('show'),2600);}
 
-  /* ============ toast ============ */
-  const toast = $('#toast'); let toastT=0;
-  function say(msg){ toast.textContent=msg; toast.classList.add('show');
-    clearTimeout(toastT); toastT=setTimeout(()=>toast.classList.remove('show'),2600); }
+/* ============ THREE scene ============ */
+const renderer=new THREE.WebGLRenderer({canvas:$('#gl3d'),alpha:true,antialias:true});
+renderer.setClearColor(0x000000,0);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(55,1,.1,60);
+camera.position.set(0,1.2,4.4);
+let camDist=4.4;
+const lookAt=new THREE.Vector3(0,.55,0);
 
-  /* ============ canvas sizing ============ */
-  let W=0,H=0,DPR=1;
-  function resize(){
-    DPR=Math.min(devicePixelRatio||1,2);
-    W=innerWidth; H=innerHeight;
-    stage.width=W*DPR; stage.height=H*DPR;
-    stage.style.width=W+'px'; stage.style.height=H+'px';
-    ctx.setTransform(DPR,0,0,DPR,0,0);
-    layout();
-  }
-  addEventListener('resize',resize);
-  addEventListener('orientationchange',()=>setTimeout(resize,300));
+scene.add(new THREE.HemisphereLight(0x8fa8ff,0x1a1030,.85));
+const key=new THREE.DirectionalLight(0xffffff,1.05);
+key.position.set(-2,4,3); scene.add(key);
 
-  /* ============ figures ============ */
-  const PALS=[
-    {a:'#39f0d4',b:'#0e8f7c',aura:'rgba(57,240,212,',pitch:1.0,persona:'alpha'},
-    {a:'#f5c451',b:'#c07a10',aura:'rgba(245,196,81,',pitch:0.82,persona:'sigma'},
-    {a:'#a78bfa',b:'#6d28d9',aura:'rgba(167,139,250,',pitch:1.28,persona:'beta'}
-  ];
-  const figs=[];
-  function makeFigs(){
-    figs.length=0;
-    for(let i=0;i<3;i++){
-      figs.push({
-        i, name:names[i], pal:PALS[i],
-        xN:[0.24,0.5,0.76][i], baseYN:0.7,
-        phase:i*2.1, bounce:0, arm:0, head:0, spin:0, spinV:0,
-        talkUntil:0, bubble:'', mouth:0, size:1
-      });
-    }
-    layout();
-  }
-  function layout(){
-    const base=Math.min(W,H);
-    figs.forEach(f=>{ f.x=f.xN*W; f.baseY=f.baseYN*H; f.R=base*0.11*f.size; });
-  }
+const stage=new THREE.Group(); scene.add(stage);
 
-  /* ============ audio (dance to sound) ============ */
-  let audioCtx=null, analyser=null, freqData=null;
-  let bass=0, mid=0, treble=0, energy=0, beat=0, lastBass=0;
-  function initAudio(stream){
-    try{
-      const AC=window.AudioContext||window.webkitAudioContext;
-      audioCtx=new AC();
-      const src=audioCtx.createMediaStreamSource(stream);
-      analyser=audioCtx.createAnalyser();
-      analyser.fftSize=256; analyser.smoothingTimeConstant=0.8;
-      src.connect(analyser);
-      freqData=new Uint8Array(analyser.frequencyBinCount);
-    }catch(e){ analyser=null; }
-  }
-  function readAudio(){
-    if(!analyser||!settings.sound){
-      // idle sway when sound is off
-      bass*=0.9; mid*=0.9; treble*=0.9; energy*=0.9; beat*=0.86; return;
-    }
-    analyser.getByteFrequencyData(freqData);
-    const n=freqData.length;
-    let b=0,m=0,t=0;
-    const bEnd=Math.floor(n*0.12), mEnd=Math.floor(n*0.45);
-    for(let i=0;i<n;i++){ const v=freqData[i]/255; if(i<bEnd)b+=v; else if(i<mEnd)m+=v; else t+=v; }
-    b/=bEnd; m/=(mEnd-bEnd); t/=(n-mEnd);
-    bass+=(b-bass)*0.35; mid+=(m-mid)*0.3; treble+=(t-treble)*0.25;
-    energy=Math.min(1,(bass*1.3+mid+treble*0.7)/2.2);
-    // beat detection on bass rising edge
-    if(bass-lastBass>0.11 && bass>0.28){ beat=1; kick(); }
-    lastBass=bass; beat*=0.86;
-  }
-  function kick(){ figs.forEach(f=>{ f.spinV += (Math.random()<0.5?-1:1)*(0.6+Math.random()*0.5); }); }
+/* neon dance floor */
+const floorGrp=new THREE.Group(); stage.add(floorGrp);
+const ringMat=new THREE.MeshBasicMaterial({color:0x39f0d4,transparent:true,opacity:.85,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false});
+const ring=new THREE.Mesh(new THREE.RingGeometry(1.58,1.66,80),ringMat);
+ring.rotation.x=-Math.PI/2; ring.position.y=.005; floorGrp.add(ring);
+const ring2=new THREE.Mesh(new THREE.RingGeometry(.42,.47,60),
+  new THREE.MeshBasicMaterial({color:0x8b5cf6,transparent:true,opacity:.7,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));
+ring2.rotation.x=-Math.PI/2; ring2.position.y=.004; floorGrp.add(ring2);
+const grid=new THREE.PolarGridHelper(1.6,8,5,48,0x39f0d4,0x8b5cf6);
+grid.material.transparent=true; grid.material.opacity=.28;
+grid.material.blending=THREE.AdditiveBlending; grid.material.depthWrite=false;
+floorGrp.add(grid);
 
-  /* ============ drawing ============ */
-  function roundRect(x,y,w,h,r){
-    ctx.beginPath();
-    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
-    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
-  }
-  function drawFigure(f,tS){
-    const indiv=0.6+0.4*Math.sin(tS*3+f.phase);
-    const b=(settings.sound?bass:0.12+0.06*Math.sin(tS*2+f.phase))*indiv;
-    const jump=b*f.R*0.55 + beat*f.R*0.18;
-    const y=f.baseY - jump;
-    const stretch=1+b*0.18 - beat*0.05;
-    const squash=1-b*0.12 + beat*0.05;
-    const tilt=Math.sin(tS*2.4+f.phase)*(0.12+mid*0.25) + f.spin;
-    f.spinV*=0.9; f.spin+=f.spinV*0.05; f.spin*=0.9;
-    const armSw=Math.sin(tS*6+f.phase)*(0.5+mid*1.1);
-    const armUp=treble*0.9;
-    const headBob=Math.sin(tS*8+f.phase)*(2+treble*7);
-    const talking=performance.now()<f.talkUntil;
-    f.mouth += ((talking?0.6+0.4*Math.sin(tS*22):0.12)-f.mouth)*0.3;
+/* glow sprite texture */
+function glowTexture(){
+  const c=document.createElement('canvas');c.width=c.height=128;
+  const x=c.getContext('2d');
+  const g=x.createRadialGradient(64,64,4,64,64,64);
+  g.addColorStop(0,'rgba(255,255,255,.9)');
+  g.addColorStop(.35,'rgba(255,255,255,.28)');
+  g.addColorStop(1,'rgba(255,255,255,0)');
+  x.fillStyle=g;x.fillRect(0,0,128,128);
+  return new THREE.CanvasTexture(c);
+}
+const glowTex=glowTexture();
 
-    ctx.save();
-    // shadow on ground
-    ctx.save();
-    ctx.translate(f.x,f.baseY+f.R*0.95);
-    ctx.scale(1,0.32);
-    const shA=0.28-b*0.1;
-    ctx.fillStyle='rgba(0,0,0,'+Math.max(0.08,shA)+')';
-    ctx.beginPath(); ctx.arc(0,0,f.R*(0.75+b*0.3),0,7); ctx.fill();
-    ctx.restore();
+/* ============ NeonBot: procedurally rigged 3D character ============ */
+const PALS=[
+  {hex:0x39f0d4,css:'#39f0d4',body:0x0d3d34,pitch:1.0,persona:'alpha',
+   desc:'en kul robot som er besatt av League of Legends og solo queue'},
+  {hex:0xf5c451,css:'#f5c451',body:0x4a3308,pitch:0.82,persona:'sigma',
+   desc:'en habibi-robot som elsker karak chai, sier wallah og drømmer om Dubai, nettopp tatt fagbrev'},
+  {hex:0xa78bfa,css:'#a78bfa',body:0x2b1b56,pitch:1.28,persona:'beta',
+   desc:'en hyperaktiv kaos-robot full av energi og kjærlighet'}
+];
+class NeonBot{
+  constructor(i){
+    this.i=i; this.pal=PALS[i]; this.name=names[i];
+    this.move=i%3; this.beatCount=0; this.jumpV=0; this.jumpY=0;
+    this.spin=0; this.spinV=0; this.talkUntil=0; this.mouth=0; this.blink=0;
+    this.nextBlink=1+Math.random()*3; this.phase=i*2.1;
 
-    ctx.translate(f.x,y);
-    ctx.rotate(tilt*0.12);
+    const em=this.pal.hex, bodyC=this.pal.body;
+    const matBody=new THREE.MeshStandardMaterial({color:bodyC,emissive:em,emissiveIntensity:.34,metalness:.55,roughness:.3});
+    const matLimb=new THREE.MeshStandardMaterial({color:bodyC,emissive:em,emissiveIntensity:.55,metalness:.5,roughness:.35});
+    const matGlow=new THREE.MeshBasicMaterial({color:new THREE.Color(em).lerp(new THREE.Color(0xffffff),.45)});
+    this.matBody=matBody;
 
-    // aura glow (pulses with energy)
-    const glow=0.25+energy*0.6+beat*0.3;
-    const g=ctx.createRadialGradient(0,0,f.R*0.2,0,0,f.R*1.9);
-    g.addColorStop(0,f.pal.aura+(0.5*glow)+')');
-    g.addColorStop(1,f.pal.aura+'0)');
-    ctx.fillStyle=g;
-    ctx.beginPath(); ctx.arc(0,0,f.R*1.9,0,7); ctx.fill();
+    this.root=new THREE.Group();
+    const POS=[[-.92,0,-.15],[0,0,.5],[.92,0,-.15]];
+    this.root.position.set(POS[i][0],POS[i][1],POS[i][2]);
+    this.root.scale.setScalar(.82);
+    this.root.lookAt(0,0,camera.position.z*2); // face viewer
 
-    // legs (bounce alternately)
-    const legSw=Math.sin(tS*6+f.phase)*(6+b*14);
-    ctx.lineCap='round'; ctx.lineWidth=f.R*0.22; ctx.strokeStyle=f.pal.b;
-    for(const s of [-1,1]){
-      ctx.beginPath();
-      ctx.moveTo(s*f.R*0.28,f.R*0.55);
-      ctx.quadraticCurveTo(s*f.R*0.34,f.R*0.9, s*f.R*0.3+ s*legSw*0.4, f.R*1.05+ (s>0?legSw:-legSw));
-      ctx.stroke();
+    this.hip=new THREE.Group(); this.hip.position.y=.62; this.root.add(this.hip);
+
+    // body
+    const body=new THREE.Mesh(new THREE.CapsuleGeometry(.3,.34,6,18),matBody);
+    body.position.y=.12; this.hip.add(body);
+    // chest core
+    const core=new THREE.Mesh(new THREE.SphereGeometry(.07,14,14),matGlow);
+    core.position.set(0,.16,.27); this.hip.add(core); this.core=core;
+
+    // head
+    this.headG=new THREE.Group(); this.headG.position.y=.56; this.hip.add(this.headG);
+    const head=new THREE.Mesh(new THREE.SphereGeometry(.24,22,22),matBody);
+    this.headG.add(head);
+    // face (canvas texture)
+    this.faceCv=document.createElement('canvas'); this.faceCv.width=this.faceCv.height=128;
+    this.faceTex=new THREE.CanvasTexture(this.faceCv);
+    const face=new THREE.Mesh(new THREE.PlaneGeometry(.3,.3),
+      new THREE.MeshBasicMaterial({map:this.faceTex,transparent:true,depthWrite:false}));
+    face.position.set(0,.0,.235); this.headG.add(face);
+    // antenna
+    const ant=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.16,6),matLimb);
+    ant.position.y=.31; this.headG.add(ant);
+    const antBall=new THREE.Mesh(new THREE.SphereGeometry(.045,12,12),matGlow);
+    antBall.position.y=.4; this.headG.add(antBall); this.antBall=antBall;
+    // ear pods
+    for(const s of[-1,1]){
+      const pod=new THREE.Mesh(new THREE.SphereGeometry(.06,12,12),matLimb);
+      pod.position.set(s*.24,.02,0); this.headG.add(pod);
     }
 
-    // body (rounded, gradient, squash/stretch)
-    ctx.save();
-    ctx.scale(squash,stretch);
-    const bg=ctx.createLinearGradient(0,-f.R,0,f.R);
-    bg.addColorStop(0,f.pal.a); bg.addColorStop(1,f.pal.b);
-    ctx.fillStyle=bg;
-    ctx.shadowColor=f.pal.aura+'0.7)'; ctx.shadowBlur=18+energy*22;
-    ctx.beginPath();
-    ctx.moveTo(0,-f.R);
-    ctx.bezierCurveTo(f.R*1.05,-f.R, f.R*0.95,f.R*0.8, 0,f.R*0.75);
-    ctx.bezierCurveTo(-f.R*0.95,f.R*0.8, -f.R*1.05,-f.R, 0,-f.R);
-    ctx.fill();
-    ctx.shadowBlur=0;
-    ctx.restore();
-
-    // arms (swing/raise with music)
-    ctx.lineWidth=f.R*0.2; ctx.strokeStyle=f.pal.a;
-    for(const s of [-1,1]){
-      const up=armUp*f.R*(s>0?1:1);
-      const sw=s*armSw*f.R*0.5;
-      ctx.beginPath();
-      ctx.moveTo(s*f.R*0.55,-f.R*0.15);
-      ctx.quadraticCurveTo(s*f.R*0.95, -f.R*0.2 - up, s*f.R*0.9+sw, -f.R*0.6 - up);
-      ctx.stroke();
-      // hands
-      ctx.fillStyle=f.pal.a;
-      ctx.beginPath(); ctx.arc(s*f.R*0.9+sw,-f.R*0.6-up,f.R*0.12,0,7); ctx.fill();
+    // arms (pivot at shoulder)
+    this.arms=[];
+    for(const s of[-1,1]){
+      const g=new THREE.Group(); g.position.set(s*.34,.34,0); this.hip.add(g);
+      const geo=new THREE.CapsuleGeometry(.07,.3,4,12); geo.translate(0,-.2,0);
+      const arm=new THREE.Mesh(geo,matLimb); g.add(arm);
+      const hand=new THREE.Mesh(new THREE.SphereGeometry(.085,12,12),matGlow);
+      hand.position.y=-.42; g.add(hand);
+      g.userData.side=s; this.arms.push(g);
+    }
+    // legs (pivot at hip)
+    this.legs=[];
+    for(const s of[-1,1]){
+      const g=new THREE.Group(); g.position.set(s*.15,-.06,0); this.hip.add(g);
+      const geo=new THREE.CapsuleGeometry(.075,.3,4,12); geo.translate(0,-.2,0);
+      const leg=new THREE.Mesh(geo,matLimb); g.add(leg);
+      const foot=new THREE.Mesh(new THREE.SphereGeometry(.09,12,12),matLimb);
+      foot.position.y=-.44; foot.scale.set(1,.6,1.3); g.add(foot);
+      g.userData.side=s; this.legs.push(g);
     }
 
-    // face
-    ctx.save();
-    ctx.translate(0,-f.R*0.35+headBob*0.02);
+    // glow sprite + shadow blob
+    const spr=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:em,transparent:true,opacity:.5,blending:THREE.AdditiveBlending,depthWrite:false}));
+    spr.scale.set(2.1,2.1,1); spr.position.y=.75; this.root.add(spr); this.spr=spr;
+    const sh=new THREE.Mesh(new THREE.CircleGeometry(.4,24),
+      new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.35,depthWrite:false}));
+    sh.rotation.x=-Math.PI/2; sh.position.y=.01; this.root.add(sh); this.shadow=sh;
+
+    // HTML overlay: nametag + bubble
+    this.tag=document.createElement('div'); this.tag.className='nametag';
+    this.tag.style.borderColor=this.pal.css; this.tag.style.color=this.pal.css;
+    this.tag.textContent=this.name; overlay.appendChild(this.tag);
+    this.bub=document.createElement('div'); this.bub.className='bubble';
+    overlay.appendChild(this.bub);
+
+    stage.add(this.root);
+    this.drawFace(0,0);
+  }
+  drawFace(mouth,blink){
+    const x=this.faceCv.getContext('2d');
+    x.clearRect(0,0,128,128);
+    x.fillStyle='#0b0d14';
     // eyes
-    ctx.fillStyle='#0b0d14';
-    const eyeX=f.R*0.28, eyeY=-f.R*0.02, eyeR=f.R*0.13;
-    for(const s of [-1,1]){
-      ctx.beginPath(); ctx.arc(s*eyeX,eyeY,eyeR,0,7); ctx.fill();
-      ctx.fillStyle='#fff';
-      ctx.beginPath(); ctx.arc(s*eyeX+eyeR*0.3,eyeY-eyeR*0.3,eyeR*0.4,0,7); ctx.fill();
-      ctx.fillStyle='#0b0d14';
+    const eh=blink>.5?2:14;
+    for(const s of[-1,1]){
+      x.beginPath();
+      x.ellipse(64+s*22,52,9,eh,0,0,7); x.fill();
     }
-    // mouth (opens when talking / smiles)
-    ctx.strokeStyle='#0b0d14'; ctx.lineWidth=f.R*0.08; ctx.lineCap='round';
-    const mo=f.mouth;
-    if(mo>0.25){
-      ctx.fillStyle='#0b0d14';
-      ctx.beginPath(); ctx.ellipse(0,f.R*0.26,f.R*0.16,f.R*0.1*mo+f.R*0.05,0,0,7); ctx.fill();
+    if(eh>4){
+      x.fillStyle='#fff';
+      for(const s of[-1,1]){x.beginPath();x.arc(64+s*22+3,48,3.4,0,7);x.fill();}
+      x.fillStyle='#0b0d14';
+    }
+    // mouth
+    if(mouth>.22){
+      x.beginPath();x.ellipse(64,86,13,6+mouth*12,0,0,7);x.fill();
     }else{
-      ctx.beginPath();
-      ctx.moveTo(-f.R*0.2,f.R*0.2);
-      ctx.quadraticCurveTo(0,f.R*0.36, f.R*0.2,f.R*0.2);
-      ctx.stroke();
+      x.strokeStyle='#0b0d14';x.lineWidth=6;x.lineCap='round';
+      x.beginPath();x.moveTo(48,84);x.quadraticCurveTo(64,96,80,84);x.stroke();
     }
-    ctx.restore();
+    this.faceTex.needsUpdate=true;
+  }
+  update(dt,tS,A){ // A={bass,mid,treble,energy,beat}
+    const talking=performance.now()<this.talkUntil;
+    // blink
+    this.nextBlink-=dt;
+    if(this.nextBlink<=0){this.blink=1;this.nextBlink=1.5+Math.random()*3.4;}
+    this.blink=Math.max(0,this.blink-dt*7);
+    const targetMouth=talking?(.5+.5*Math.sin(tS*21+this.phase)):.05;
+    this.mouth+=(targetMouth-this.mouth)*.35;
+    if((this._fi=(this._fi||0)+dt)>0.07){this._fi=0;this.drawFace(this.mouth,this.blink);}
 
-    ctx.restore();
+    const e=A.energy, b=A.bass, m=A.mid, tr=A.treble;
+    const drive=settings.sound?e:.12;
+    // jump physics on beat
+    this.jumpV-=9.5*dt; this.jumpY=Math.max(0,this.jumpY+this.jumpV*dt);
+    if(this.jumpY===0)this.jumpV=0;
+    // spin impulse
+    this.spinV*=.92; this.spin+=this.spinV*dt*4; this.spin*=.94;
 
-    // name label
-    ctx.save();
-    ctx.font='600 '+Math.round(f.R*0.28)+'px -apple-system,Segoe UI,sans-serif';
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    const label=f.name, tw=ctx.measureText(label).width;
-    const lx=f.x, ly=y-f.R*1.35, pad=f.R*0.18;
-    ctx.fillStyle='rgba(8,10,18,.55)';
-    roundRect(lx-tw/2-pad,ly-f.R*0.22,tw+pad*2,f.R*0.44,f.R*0.22); ctx.fill();
-    ctx.fillStyle=f.pal.a; ctx.fillText(label,lx,ly);
-    ctx.restore();
+    const bounce=Math.abs(Math.sin(tS*5.6+this.phase))*b*.32;
+    this.hip.position.y=.62+bounce+this.jumpY;
+    const sq=1-b*.14+A.beat*.06;
+    this.hip.scale.set(1/Math.sqrt(sq),sq,1/Math.sqrt(sq));
 
-    // speech bubble
-    if(talking && f.bubble){
-      drawBubble(f, f.bubble, y);
+    // dance move library
+    const M=this.move, sw=Math.sin(tS*5.6+this.phase), cw=Math.cos(tS*5.6+this.phase);
+    let armL,armR,hipRotY=0,hipRotZ=0,headTilt=0;
+    if(M===0){ // pump: alternating arm pumps
+      armL=-.5-sw*(.5+m*1.6); armR=-.5+sw*(.5+m*1.6);
+      hipRotZ=sw*.09*(1+m); headTilt=cw*.14;
+    }else if(M===1){ // twist: hips + both arms out
+      hipRotY=sw*(.45+m*.5);
+      armL=-1.15-tr*.9; armR=-1.15-tr*.9;
+      headTilt=sw*.1;
+    }else{ // rave: hands in the air waving
+      armL=-2.4+Math.sin(tS*7+this.phase)*.35;
+      armR=-2.4+Math.cos(tS*7+this.phase)*.35;
+      hipRotZ=cw*.06; headTilt=Math.sin(tS*9)*.12*(1+tr);
     }
+    this.arms[0].rotation.z=-armL; this.arms[0].rotation.x=cw*.2*m;
+    this.arms[1].rotation.z=armR;  this.arms[1].rotation.x=-cw*.2*m;
+    this.hip.rotation.y=hipRotY+this.spin;
+    this.hip.rotation.z=hipRotZ;
+    this.headG.rotation.z=headTilt;
+    this.headG.rotation.x=Math.sin(tS*8+this.phase)*.08*(drive*2);
+    // legs: little steps
+    this.legs[0].rotation.x=sw*.5*b;
+    this.legs[1].rotation.x=-sw*.5*b;
+
+    // glow + core pulse
+    const glow=.3+e*.65+A.beat*.4;
+    this.spr.material.opacity=.25+glow*.4;
+    this.core.scale.setScalar(1+b*.7+A.beat*.4);
+    this.antBall.scale.setScalar(1+tr*1.2);
+    this.matBody.emissiveIntensity=.3+e*.5+A.beat*.3;
+    this.shadow.material.opacity=Math.max(.1,.35-(this.jumpY+bounce)*.35);
+    this.shadow.scale.setScalar(1+(this.jumpY+bounce)*.5);
   }
-  function drawBubble(f,text,fy){
-    ctx.save();
-    ctx.font='500 '+Math.round(Math.min(W,H)*0.036)+'px -apple-system,Segoe UI,sans-serif';
-    const maxW=Math.min(W*0.62,320);
-    const words=text.split(' '); const lines=[]; let line='';
-    for(const w of words){
-      const test=line?line+' '+w:w;
-      if(ctx.measureText(test).width>maxW && line){ lines.push(line); line=w; }
-      else line=test;
+  onBeat(){
+    this.beatCount++;
+    if(this.beatCount%8===0)this.move=(this.move+1+Math.floor(Math.random()*2))%3;
+    if(Math.random()<.3){this.jumpV=2.6+Math.random()*1.2;}
+    if(Math.random()<.35)this.spinV+=(Math.random()<.5?-1:1)*(2+Math.random()*2);
+  }
+  talk(text,think){
+    this.bub.textContent=text;
+    this.bub.classList.toggle('think',!!think);
+    this.bub.style.opacity=1;
+    this.talkUntil=performance.now()+(think?12000:Math.max(2400,text.length*75));
+    if(!think){this.spinV+=(Math.random()<.5?-1:1)*1.6; if(Math.random()<.5)this.jumpV=2.4;}
+  }
+  hush(){this.bub.style.opacity=0;this.talkUntil=0;}
+}
+const bots=[new NeonBot(0),new NeonBot(1),new NeonBot(2)];
+
+/* colored party lights */
+const pLights=bots.map(b=>{
+  const l=new THREE.PointLight(b.pal.hex,1.4,7,1.6);
+  l.position.set(b.root.position.x*1.3,2.2,b.root.position.z*1.3+.6);
+  scene.add(l); return l;
+});
+
+/* confetti */
+const CONF_N=320;
+const confGeo=new THREE.BufferGeometry();
+const confPos=new Float32Array(CONF_N*3), confVel=new Float32Array(CONF_N*3), confCol=new Float32Array(CONF_N*3);
+confGeo.setAttribute('position',new THREE.BufferAttribute(confPos,3));
+confGeo.setAttribute('color',new THREE.BufferAttribute(confCol,3));
+const confetti=new THREE.Points(confGeo,new THREE.PointsMaterial({size:.055,vertexColors:true,transparent:true,opacity:.95,depthWrite:false}));
+confetti.visible=false; scene.add(confetti);
+let confLife=0;
+function burst(){
+  const cols=[0x39f0d4,0xf5c451,0x8b5cf6,0xffffff];
+  for(let i=0;i<CONF_N;i++){
+    confPos[i*3]= (Math.random()-.5)*1.2;
+    confPos[i*3+1]=1.6+Math.random()*.6;
+    confPos[i*3+2]=(Math.random()-.5)*1.2;
+    confVel[i*3]=(Math.random()-.5)*2.6;
+    confVel[i*3+1]=1.5+Math.random()*2.6;
+    confVel[i*3+2]=(Math.random()-.5)*2.6;
+    const c=new THREE.Color(cols[i&3]);
+    confCol[i*3]=c.r;confCol[i*3+1]=c.g;confCol[i*3+2]=c.b;
+  }
+  confGeo.attributes.position.needsUpdate=true;
+  confGeo.attributes.color.needsUpdate=true;
+  confetti.visible=true; confLife=3.2;
+}
+function stepConfetti(dt){
+  if(!confetti.visible)return;
+  confLife-=dt;
+  if(confLife<=0){confetti.visible=false;return;}
+  for(let i=0;i<CONF_N;i++){
+    confVel[i*3+1]-=4.5*dt;
+    confPos[i*3]+=confVel[i*3]*dt;
+    confPos[i*3+1]+=confVel[i*3+1]*dt;
+    confPos[i*3+2]+=confVel[i*3+2]*dt;
+    if(confPos[i*3+1]<0){confPos[i*3+1]=0;confVel[i*3+1]*=-.3;}
+  }
+  confGeo.attributes.position.needsUpdate=true;
+  confetti.material.opacity=Math.min(1,confLife);
+}
+
+/* ============ sizing ============ */
+let W=0,H=0;
+function resize(){
+  W=innerWidth;H=innerHeight;
+  renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
+  renderer.setSize(W,H);
+  camera.aspect=W/H;camera.updateProjectionMatrix();
+}
+addEventListener('resize',resize);
+addEventListener('orientationchange',()=>setTimeout(resize,300));
+resize();
+
+/* ============ audio analysis ============ */
+let audioCtx=null,analyser=null,freqData=null;
+const A={bass:0,mid:0,treble:0,energy:0,beat:0};
+let lastBass=0;
+function initAudio(stream){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    audioCtx=new AC();
+    const src=audioCtx.createMediaStreamSource(stream);
+    analyser=audioCtx.createAnalyser();
+    analyser.fftSize=256;analyser.smoothingTimeConstant=.8;
+    src.connect(analyser);
+    freqData=new Uint8Array(analyser.frequencyBinCount);
+  }catch(e){analyser=null;}
+}
+let demoAudio=false;
+function readAudio(tS){
+  if(demoAudio){
+    A.bass=.45+.35*Math.sin(tS*4.4);A.mid=.4+.3*Math.sin(tS*3.1+1);
+    A.treble=.3+.3*Math.sin(tS*5.3+2);A.energy=.7;
+    if(Math.sin(tS*4.4)>.965&&A.beat<.5){A.beat=1;bots.forEach(b=>b.onBeat());}
+    A.beat*=.86;return;
+  }
+  if(!analyser||!settings.sound){
+    A.bass*=.9;A.mid*=.9;A.treble*=.9;A.energy*=.9;A.beat*=.86;return;
+  }
+  analyser.getByteFrequencyData(freqData);
+  const n=freqData.length;let b=0,m=0,t=0;
+  const bE=Math.floor(n*.12),mE=Math.floor(n*.45);
+  for(let i=0;i<n;i++){const v=freqData[i]/255;if(i<bE)b+=v;else if(i<mE)m+=v;else t+=v;}
+  b/=bE;m/=(mE-bE);t/=(n-mE);
+  A.bass+=(b-A.bass)*.35;A.mid+=(m-A.mid)*.3;A.treble+=(t-A.treble)*.25;
+  A.energy=Math.min(1,(A.bass*1.3+A.mid+A.treble*.7)/2.2);
+  if(A.bass-lastBass>.11&&A.bass>.28){A.beat=1;bots.forEach(bb=>bb.onBeat());}
+  lastBass=A.bass;A.beat*=.86;
+}
+
+/* ============ gyro AR parallax ============ */
+let gyro={a:0,b:0,ca:null,cb:null,tx:0,ty:0};
+function onOrient(e){
+  if(!settings.gyro||e.beta==null)return;
+  if(gyro.cb==null){gyro.cb=e.beta;gyro.ca=e.gamma||0;}
+  gyro.ty=THREE.MathUtils.clamp((e.beta-gyro.cb)*.012,-.3,.3);
+  gyro.tx=THREE.MathUtils.clamp(((e.gamma||0)-gyro.ca)*.012,-.35,.35);
+}
+async function enableGyro(){
+  try{
+    if(typeof DeviceOrientationEvent!=='undefined'&&DeviceOrientationEvent.requestPermission){
+      const p=await DeviceOrientationEvent.requestPermission();
+      if(p!=='granted')return;
     }
-    if(line)lines.push(line);
-    const lh=Math.min(W,H)*0.05, pad=14;
-    let bw=0; lines.forEach(l=>bw=Math.max(bw,ctx.measureText(l).width));
-    bw+=pad*2; const bh=lines.length*lh+pad*1.4;
-    let bx=f.x-bw/2; bx=Math.max(10,Math.min(W-bw-10,bx));
-    const by=fy-f.R*1.9-bh;
-    ctx.fillStyle='rgba(255,255,255,.96)';
-    ctx.shadowColor='rgba(0,0,0,.4)'; ctx.shadowBlur=18; ctx.shadowOffsetY=6;
-    roundRect(bx,by,bw,bh,16); ctx.fill();
-    // tail
-    ctx.beginPath();
-    ctx.moveTo(f.x-8,by+bh-1); ctx.lineTo(f.x,by+bh+12); ctx.lineTo(f.x+8,by+bh-1); ctx.closePath(); ctx.fill();
-    ctx.shadowBlur=0; ctx.shadowOffsetY=0;
-    ctx.fillStyle='#12141c'; ctx.textAlign='left'; ctx.textBaseline='top';
-    lines.forEach((l,i)=>ctx.fillText(l,bx+pad,by+pad*0.7+i*lh));
-    ctx.restore();
-  }
+    addEventListener('deviceorientation',onOrient);
+  }catch(e){}
+}
 
-  /* ============ main loop ============ */
-  let running=false, t0=performance.now();
-  function loop(){
-    if(!running)return;
-    const tS=(performance.now()-t0)/1000;
-    readAudio();
-    energyBar.style.width=Math.round(Math.min(100,energy*130))+'%';
-    if(energy*130>settings.hs){ settings.hs=energy*130; }
-    ctx.clearRect(0,0,W,H);
-    // sort by y so nearer draws on top (all same but keeps stable)
-    figs.forEach(f=>drawFigure(f,tS));
-    requestAnimationFrame(loop);
-  }
+/* mouse parallax on desktop */
+let mx=0,my=0;
+addEventListener('pointermove',e=>{
+  if(e.pointerType==='mouse'){mx=(e.clientX/W-.5);my=(e.clientY/H-.5);}
+});
 
-  /* ============ camera ============ */
-  let stream=null;
-  async function startCamera(){
-    const err=$('#veilErr'); err.textContent='';
+/* ============ drag / pinch / tap ============ */
+const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();
+let dragging=false,dragMoved=0,px=0,pinch0=0;
+const gl3d=$('#gl3d');
+gl3d.addEventListener('pointerdown',e=>{dragging=true;dragMoved=0;px=e.clientX;});
+addEventListener('pointermove',e=>{
+  if(!dragging)return;
+  const dx=e.clientX-px;px=e.clientX;dragMoved+=Math.abs(dx);
+  stage.rotation.y+=dx*.006;
+});
+addEventListener('pointerup',e=>{
+  if(!dragging)return;dragging=false;
+  if(dragMoved<8){ // tap → raycast a bot
+    ndc.set((e.clientX/W)*2-1,-(e.clientY/H)*2+1);
+    ray.setFromCamera(ndc,camera);
+    let best=null,bd=1e9;
+    bots.forEach(b=>{
+      const hit=ray.intersectObject(b.root,true);
+      if(hit.length&&hit[0].distance<bd){bd=hit[0].distance;best=b;}
+    });
+    if(best){primeSpeech();best.jumpV=3;best.spinV+=2.5;replyLocalPoke(best);}
+  }
+});
+gl3d.addEventListener('touchmove',e=>{
+  if(e.touches.length===2){
+    const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,
+                       e.touches[0].clientY-e.touches[1].clientY);
+    if(pinch0)camDist=THREE.MathUtils.clamp(camDist*(pinch0/d),2.2,5.2);
+    pinch0=d;
+  }
+},{passive:true});
+gl3d.addEventListener('touchend',()=>pinch0=0);
+
+/* ============ render loop ============ */
+const clock=new THREE.Clock();let running=false;
+function loop(){
+  if(!running)return;
+  requestAnimationFrame(loop);
+  const dt=Math.min(clock.getDelta(),.05),tS=clock.elapsedTime;
+  readAudio(tS);
+  energyBar.style.width=Math.round(Math.min(100,A.energy*130))+'%';
+
+  bots.forEach(b=>b.update(dt,tS,A));
+  stepConfetti(dt);
+
+  floorGrp.rotation.y+=dt*.15;
+  const pul=1+A.bass*.16+A.beat*.1;
+  ring.scale.setScalar(pul);ring2.scale.setScalar(2-pul);
+  ringMat.opacity=.5+A.energy*.5;
+  grid.material.opacity=.16+A.energy*.3;
+  pLights.forEach((l,i)=>{l.intensity=.6+A.bass*1.8+A.beat*1.1;
+    l.position.y=2.1+Math.sin(tS*1.7+i*2)*0.4;});
+
+  // camera: gyro + mouse parallax
+  const ox=(gyro.tx+mx*.5),oy=(gyro.ty+my*.35);
+  camera.position.x+=(Math.sin(ox)*camDist-camera.position.x)*.08;
+  camera.position.z+=(Math.cos(ox)*camDist-camera.position.z)*.08;
+  camera.position.y+=((1.15+oy*1.4)-camera.position.y)*.08;
+  camera.lookAt(lookAt);
+
+  renderer.render(scene,camera);
+
+  // project tags + bubbles
+  const v=new THREE.Vector3();
+  bots.forEach(b=>{
+    b.headG.getWorldPosition(v);v.y+=.55;v.project(camera);
+    const sx=(v.x*.5+.5)*W,sy=(-v.y*.5+.5)*H;
+    const vis=v.z<1;
+    b.tag.style.opacity=vis?1:0;
+    b.tag.style.left=sx+'px';b.tag.style.top=sy+'px';
+    b.bub.style.left=Math.max(110,Math.min(W-110,sx))+'px';
+    b.bub.style.top=Math.max(148,sy-26)+'px';
+    if(performance.now()>b.talkUntil)b.bub.style.opacity=0;
+    b.tag.textContent=b.name;
+  });
+}
+
+/* ============ camera stream ============ */
+let stream=null;
+async function startCamera(withCam){
+  const err=$('#veilErr');err.textContent='';
+  if(withCam){
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
-      err.textContent='Nettleseren din støtter ikke kamera-API. Prøv Safari eller Chrome.'; return;
+      err.textContent='Nettleseren støtter ikke kamera. Prøv Safari/Chrome — eller «uten kamera».';return false;
     }
     try{
       stream=await navigator.mediaDevices.getUserMedia({
-        video:{facingMode:settings.facing,width:{ideal:1280},height:{ideal:720}},
-        audio:true
-      });
+        video:{facingMode:settings.facing,width:{ideal:1280},height:{ideal:720}},audio:true});
     }catch(e){
-      // retry without audio if audio blocked
       try{
         stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:settings.facing},audio:false});
-        say('Uten mikrofon — figurene sviver i stedet 💃');
+        say('Uten mikrofon — robotene freestyler i stedet 💃');
       }catch(e2){
-        err.textContent='Fikk ikke tilgang til kamera. Sjekk at du tillot det, og at siden kjører på https.';
-        return;
+        err.textContent='Fikk ikke kameratilgang. Sjekk tillatelser (https kreves) — eller prøv uten kamera.';
+        return false;
       }
     }
-    cam.srcObject=stream;
-    cam.classList.toggle('mirror', settings.facing==='user' && settings.mirror);
-    try{ await cam.play(); }catch(e){}
-    if(stream.getAudioTracks().length){ initAudio(stream); }
-    if(audioCtx && audioCtx.state==='suspended'){ audioCtx.resume(); }
-    $('#veil').classList.add('hide');
-    if(!running){ running=true; t0=performance.now(); loop(); }
-    maybeIosHint();
-    // wake up synth on iOS within the user gesture chain
-    primeSpeech();
-    say('Festen er i gang! Snakk eller spill musikk 🎶');
-  }
-  async function flipCamera(){
-    settings.facing = settings.facing==='user'?'environment':'user';
-    LS.set('set',settings);
-    if(stream){ stream.getTracks().forEach(t=>t.stop()); }
-    if(audioCtx){ try{audioCtx.close();}catch(e){} audioCtx=null; analyser=null; }
-    await startCamera();
-  }
-
-  /* ============ speech synthesis (figures talk) ============ */
-  let voices=[];
-  function loadVoices(){ voices=speechSynthesis.getVoices()||[]; }
-  if('speechSynthesis' in window){
-    loadVoices(); speechSynthesis.onvoiceschanged=loadVoices;
-  }
-  function pickVoice(){
-    return voices.find(v=>/nb|no[-_]/i.test(v.lang)) ||
-           voices.find(v=>/^no/i.test(v.lang)) ||
-           voices.find(v=>/en/i.test(v.lang)) || voices[0];
-  }
-  let primed=false;
-  function primeSpeech(){
-    if(primed||!('speechSynthesis'in window))return; primed=true;
-    try{ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u);}catch(e){}
-  }
-  function speak(text,f){
-    if(!settings.speak||!('speechSynthesis'in window))return;
+    cam.srcObject=stream;cam.classList.add('live');
+    cam.classList.toggle('mirror',settings.facing==='user'&&settings.mirror);
+    try{await cam.play();}catch(e){}
+    if(stream.getAudioTracks().length)initAudio(stream);
+  }else{
+    // no camera: still try mic only for dansing
     try{
-      const u=new SpeechSynthesisUtterance(text);
-      const v=pickVoice(); if(v){u.voice=v;u.lang=v.lang;} else u.lang='nb-NO';
-      u.pitch=f?f.pal.pitch:1; u.rate=1.02;
-      speechSynthesis.speak(u);
-    }catch(e){}
+      stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+      initAudio(stream);
+    }catch(e){demoAudio=true;say('Demo-beat på — ingen mikrofon 🎧');}
   }
+  if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();
+  $('#veil').classList.add('hide');
+  if(!running){running=true;clock.start();loop();}
+  enableGyro();maybeIosHint();primeSpeech();
+  say(withCam?'AR-festen er i gang! 🎉':'Fest uten kamera — fortsatt fest 🎉');
+  setTimeout(()=>bots[1].talk('Wallah, vi er i 3D nå, habibi!'),900);
+  return true;
+}
+async function flipCamera(){
+  settings.facing=settings.facing==='user'?'environment':'user';
+  LS.set('set',settings);
+  if(stream)stream.getTracks().forEach(t=>t.stop());
+  if(audioCtx){try{audioCtx.close();}catch(e){}audioCtx=null;analyser=null;}
+  await startCamera(true);
+}
 
-  /* ============ personality / replies ============ */
-  const LINES={
-    alpha:{
-      hei:['Halla! Klar for solo queue?','Hei hei, ingen duo trengs her.','Yo! Rift kaller.'],
-      dans:['Se på denne recall-dansen!','ADC-footwork, følg med!','Jeg kiter og danser samtidig.'],
-      idle:['Én game til, jeg lover.','Pingen er 12, mekanikken er ren.','Jungel-timeren i hodet mitt tikker.','Jeg farmer beats nå.'],
-      navn:n=>['Jeg er '+n+', solo carry.','Navnet er '+n+'. GG.']
-    },
-    sigma:{
-      hei:['Wallah, endelig noen som hilser!','Salam habibi! Karak?','Yalla, kom hit!'],
-      dans:['Dette er khaleeji-vibes, habibi!','Karak i hånda, hofta i bevegelse!','Dubai Marina-energi, se her!'],
-      idle:['Fagbrevet henger på veggen, wallah.','Kopp nummer fire, bare oppvarming.','Playlisten min er 90% arabisk.','En dag: Marina. Insha’Allah.'],
-      navn:n=>['Jeg heter '+n+', sertifisert habibi.','Navnet? '+n+'. Wallah ekte.']
-    },
-    beta:{
-      hei:['HEEEI!! Endelig noen!','Åå du snakka til meg?! Beste dagen!','Hallaisen, la oss lage kaos!'],
-      dans:['KAOSMODUS AKTIVERT 🌀','Jeg kan ikke danse men jeg GJØR det!','Wææh se armene mine!!'],
-      idle:['Jeg er så hyped akkurat nå.','Kan vi feste? Vi kan feste sant?','Energi: JA. Plan: NEI.','Elsker deg allerede, ikke gå.'],
-      navn:n=>['JEG ER '+n+'!! Beste figuren!',''+n+', til tjeneste, chaos included!']
-    }
-  };
-  function replyFor(f,msg){
-    const p=LINES[f.pal.persona]; const m=(msg||'').toLowerCase();
-    let pool;
-    if(/hei|halla|salam|yo|heisan|hallo/.test(m)) pool=p.hei;
-    else if(/dans|dance|musikk|beat|fest|party/.test(m)) pool=p.dans;
-    else if(/navn|heter|hvem er du|who/.test(m)) return rand(p.navn(f.name));
-    else if(/glad i|elsker|love|beste/.test(m)) return f.pal.persona==='beta'?'JEG ELSKER DEG OGSÅ!! 💜':'Aww. Tilbake til deg, habibi.';
-    else if(/fagbrev|jobb|eksamen/.test(m)) return f.pal.persona==='sigma'?'FAGBREVET ER I BOKS! Mabrouk til meg selv!':'Gratulerer! Nå kan vi feste.';
-    else if(/karak|chai|te|kaffe/.test(m)) return f.pal.persona==='sigma'?'KARAK!! Du snakker mitt språk, habibi.':'Karak? Sigma blir gæren av glede nå.';
-    else if(/genser|klær/.test(m)) return 'Genser er en livsstil, ikke et plagg. Neste spørsmål.';
-    else if(/dubai|marina|arab/.test(m)) return f.pal.persona==='sigma'?'Dubai Marina, insha’Allah. Snart, habibi.':'Sigma har allerede pakka kofferten mentalt.';
-    else pool=p.idle;
-    return rand(pool);
+/* ============ speech synthesis ============ */
+let voices=[];
+function loadVoices(){voices=speechSynthesis.getVoices()||[];}
+if('speechSynthesis'in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices;}
+function pickVoice(){
+  return voices.find(v=>/nb|no[-_]/i.test(v.lang))||
+         voices.find(v=>/^no/i.test(v.lang))||
+         voices.find(v=>/en/i.test(v.lang))||voices[0];
+}
+let primed=false;
+function primeSpeech(){
+  if(primed||!('speechSynthesis'in window))return;primed=true;
+  try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u);}catch(e){}
+}
+function speak(text,b){
+  if(!settings.speak||!('speechSynthesis'in window))return;
+  try{
+    const u=new SpeechSynthesisUtterance(text.replace(/[🎶💜🎉🌀]/g,''));
+    const v=pickVoice();if(v){u.voice=v;u.lang=v.lang;}else u.lang='nb-NO';
+    u.pitch=b?b.pal.pitch:1;u.rate=1.03;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+/* ============ brain: free open AI (no key) + local fallback ============ */
+const LINES={
+  alpha:{hei:['Halla! Klar for solo queue?','Yo! Rift kaller.','Hei hei, ingen duo trengs.'],
+    dans:['Se recall-dansen min!','ADC-footwork, følg med!','Jeg kiter på beat.'],
+    idle:['Én game til, jeg lover.','Pingen er 12, mekanikken ren.','Jeg farmer beats nå.']},
+  sigma:{hei:['Wallah, endelig noen som hilser!','Salam habibi! Karak?','Yalla, kom hit!'],
+    dans:['Khaleeji-vibes, habibi!','Karak i hånda, hofta i gir!','Marina-energi, se her!'],
+    idle:['Fagbrevet henger på veggen, wallah.','Kopp fire er oppvarming.','Snart: Dubai. Insha’Allah.']},
+  beta:{hei:['HEEEI!! Endelig noen!','Du snakka til MEG?! Beste dagen!','Hallaisen, kaos-tid!'],
+    dans:['KAOSMODUS AKTIVERT 🌀','Jeg kan ikke danse men GJØR det!','Se armene mine gåå!!'],
+    idle:['Jeg er så hyped akkurat nå.','Energi: JA. Plan: NEI.','Elsker deg allerede.']}
+};
+const rand=a=>a[Math.floor(Math.random()*a.length)];
+function localReply(b,msg){
+  const p=LINES[b.pal.persona],m=(msg||'').toLowerCase();
+  if(/hei|halla|salam|yo|hallo/.test(m))return rand(p.hei);
+  if(/dans|musikk|beat|fest|party/.test(m))return rand(p.dans);
+  if(/navn|heter|hvem/.test(m))return 'Jeg er '+b.name+'!';
+  if(/karak|chai|te\b/.test(m))return b.pal.persona==='sigma'?'KARAK!! Mitt språk, habibi!':'Karak? Sigma våkner nå.';
+  if(/fagbrev/.test(m))return b.pal.persona==='sigma'?'FAGBREVET ER I BOKS! Mabrouk!':'Grattis med fagbrevet — fest!';
+  if(/genser/.test(m))return 'Genser er en livsstil, ikke et plagg.';
+  if(/dubai|marina|arab/.test(m))return 'Dubai Marina, insha’Allah. Snart!';
+  if(/elsker|glad i|love/.test(m))return b.pal.persona==='beta'?'JEG ELSKER DEG OGSÅ!! 💜':'Aww. Tilbake til deg.';
+  return rand(p.idle);
+}
+async function aiReply(b,msg){
+  // Pollinations: gratis, aapent tekst-API uten API-nokkel
+  const prompt='Du er '+b.name+', '+b.pal.desc+'. Du står som AR-figur i telefonen til brukeren på en dansefest. '
+    +'Svar på norsk, maks 18 ord, morsomt og i karakter, uten anførselstegn. Brukeren sa: '+msg;
+  const ctrl=new AbortController();
+  const to=setTimeout(()=>ctrl.abort(),7000);
+  try{
+    const res=await fetch('https://text.pollinations.ai/'+encodeURIComponent(prompt),{signal:ctrl.signal});
+    clearTimeout(to);
+    if(!res.ok)throw 0;
+    let txt=(await res.text()).trim().replace(/^["'«]|["'»]$/g,'').replace(/\s+/g,' ');
+    if(!txt||txt.length>220)throw 0;
+    return txt;
+  }catch(e){clearTimeout(to);return null;}
+}
+async function handleMessage(msg){
+  if(!msg.trim())return;
+  let b=bots.find(x=>msg.toLowerCase().includes(x.name.toLowerCase()));
+  if(!b)b=rand(bots);
+  let replied=false;
+  if(settings.ai&&navigator.onLine){
+    b.talk('…',true);
+    const smart=await aiReply(b,msg);
+    if(smart){b.talk(smart);speak(smart,b);replied=true;}
   }
-  function rand(a){ return a[Math.floor(Math.random()*a.length)]; }
-
-  function figTalk(f,text){
-    f.bubble=text; f.talkUntil=performance.now()+Math.max(2200,text.length*70);
-    f.spinV+=(Math.random()<0.5?-1:1)*0.8;
-    speak(text,f);
+  if(!replied){
+    const r=localReply(b,msg);
+    b.talk(r);speak(r,b);
   }
-  function handleMessage(msg){
-    if(!msg.trim())return;
-    // which figure? by name mention, else random
-    let f=figs.find(x=>msg.toLowerCase().includes(x.name.toLowerCase()));
-    if(!f) f=figs[Math.floor(Math.random()*figs.length)];
-    const rep=replyFor(f,msg);
-    setTimeout(()=>figTalk(f,rep),160);
-    // sometimes a friend chimes in
-    if(Math.random()<0.4){
-      const other=rand(figs.filter(x=>x!==f));
-      setTimeout(()=>figTalk(other,rand(LINES[other.pal.persona].idle)),1200);
-    }
+  if(Math.random()<.4){
+    const other=rand(bots.filter(x=>x!==b));
+    setTimeout(()=>{const r=rand(LINES[other.pal.persona].idle);other.talk(r);speak(r,other);},1600);
   }
+}
+function replyLocalPoke(b){
+  const r=rand(Math.random()<.5?LINES[b.pal.persona].dans:LINES[b.pal.persona].idle);
+  b.talk(r);speak(r,b);
+}
 
-  /* ============ tap a figure to make it talk ============ */
-  stage.addEventListener('pointerdown',e=>{
-    const r=stage.getBoundingClientRect();
-    const px=e.clientX-r.left, py=e.clientY-r.top;
-    let hit=null,best=1e9;
-    figs.forEach(f=>{
-      const dx=px-f.x, dy=py-(f.baseY-f.R*0.2);
-      const d=Math.hypot(dx,dy);
-      if(d<f.R*1.5 && d<best){ best=d; hit=f; }
-    });
-    if(hit){
-      primeSpeech();
-      const p=LINES[hit.pal.persona];
-      figTalk(hit, rand(Math.random()<0.5?p.dans:p.idle));
-      hit.spinV+=1.1;
-    }
-  });
+/* ============ speech recognition ============ */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const btnMic=$('#btnMic');let rec=null,listening=false;
+if(!SR)btnMic.style.display='none';
+function toggleMic(){
+  if(!SR)return;
+  if(listening){try{rec.stop();}catch(e){}return;}
+  try{
+    rec=new SR();rec.lang='nb-NO';rec.interimResults=false;rec.maxAlternatives=1;
+    rec.onstart=()=>{listening=true;btnMic.classList.add('on');say('Hører etter… snakk nå 🎤');};
+    rec.onerror=()=>say('Fikk ikke tak i stemmen — bruk chatten 🙂');
+    rec.onend=()=>{listening=false;btnMic.classList.remove('on');};
+    rec.onresult=ev=>{const txt=ev.results[0][0].transcript;say('«'+txt+'»');handleMessage(txt);};
+    rec.start();
+  }catch(e){say('Stemmegjenkjenning utilgjengelig her.');}
+}
 
-  /* ============ speech recognition (bonus, where supported) ============ */
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  const btnMic=$('#btnMic'); let rec=null, listening=false;
-  if(!SR){ btnMic.style.display='none'; }
-  function toggleMic(){
-    if(!SR)return;
-    if(listening){ try{rec.stop();}catch(e){} return; }
-    try{
-      rec=new SR(); rec.lang='nb-NO'; rec.interimResults=false; rec.maxAlternatives=1;
-      rec.onstart=()=>{ listening=true; btnMic.classList.add('on'); say('Hører etter… snakk nå 🎤'); };
-      rec.onerror=()=>{ say('Fikk ikke tak i stemmen din — bruk chatten 🙂'); };
-      rec.onend=()=>{ listening=false; btnMic.classList.remove('on'); };
-      rec.onresult=ev=>{ const txt=ev.results[0][0].transcript; say('«'+txt+'»'); handleMessage(txt); };
-      rec.start();
-    }catch(e){ say('Stemmegjenkjenning er ikke tilgjengelig her.'); }
-  }
+/* ============ controls ============ */
+$('#btnStart').addEventListener('click',()=>startCamera(true));
+$('#btnNoCam').addEventListener('click',()=>startCamera(false));
+$('#btnFlip').addEventListener('click',flipCamera);
+$('#btnMic').addEventListener('click',toggleMic);
+$('#btnParty').addEventListener('click',()=>{
+  primeSpeech();A.beat=1;burst();
+  bots.forEach((b,i)=>{b.onBeat();b.jumpV=3.2;
+    setTimeout(()=>{const r=rand(LINES[b.pal.persona].dans);b.talk(r);if(i===0)speak(r,b);},i*300);});
+  say('FEST! 🎉');
+});
+const btnSound=$('#btnSound');
+function refreshSound(){btnSound.classList.toggle('on',settings.sound);
+  btnSound.querySelector('.ic').textContent=settings.sound?'🔊':'🔈';}
+btnSound.addEventListener('click',()=>{settings.sound=!settings.sound;LS.set('set',settings);
+  refreshSound();say(settings.sound?'Danser til lyd 🔊':'Lyd av 🔈');});
+refreshSound();
 
-  /* ============ controls ============ */
-  $('#btnStart').addEventListener('click',startCamera);
-  $('#btnFlip').addEventListener('click',flipCamera);
-  $('#btnMic').addEventListener('click',toggleMic);
-  $('#btnParty').addEventListener('click',()=>{
-    primeSpeech(); beat=1; kick();
-    figs.forEach((f,i)=>setTimeout(()=>figTalk(f,rand(LINES[f.pal.persona].dans)),i*260));
-    say('FEST! 🎉');
-  });
-  const btnSound=$('#btnSound');
-  function refreshSound(){ btnSound.classList.toggle('on',settings.sound);
-    btnSound.querySelector('.ic').textContent=settings.sound?'🔊':'🔈'; }
-  btnSound.addEventListener('click',()=>{ settings.sound=!settings.sound; LS.set('set',settings);
-    refreshSound(); say(settings.sound?'Danser til lyd 🔊':'Lyd av 🔈'); });
+const chatInput=$('#chatInput'),chatSend=$('#chatSend');
+function sendChat(){const v=chatInput.value;if(!v.trim())return;primeSpeech();
+  handleMessage(v);chatInput.value='';}
+chatSend.addEventListener('click',sendChat);
+chatInput.addEventListener('keydown',e=>{if(e.key==='Enter')sendChat();});
+
+/* ============ settings sheet ============ */
+const sheetBg=$('#sheetBg');
+function openSheet(){
+  $('#nm0').value=names[0];$('#nm1').value=names[1];$('#nm2').value=names[2];
+  $('#swSound').classList.toggle('on',settings.sound);
+  $('#swSpeak').classList.toggle('on',settings.speak);
+  $('#swAI').classList.toggle('on',settings.ai);
+  $('#swGyro').classList.toggle('on',settings.gyro);
+  $('#swMirror').classList.toggle('on',settings.mirror);
+  sheetBg.classList.add('show');
+}
+function closeSheet(){
+  names=[$('#nm0').value.trim()||'Alpha',$('#nm1').value.trim()||'Sigma',$('#nm2').value.trim()||'Beta'];
+  bots.forEach((b,i)=>b.name=names[i]);
+  LS.set('names',names);LS.set('set',settings);
   refreshSound();
-
-  const chatInput=$('#chatInput'), chatSend=$('#chatSend');
-  function sendChat(){ const v=chatInput.value; if(!v.trim())return; primeSpeech();
-    handleMessage(v); chatInput.value=''; }
-  chatSend.addEventListener('click',sendChat);
-  chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter')sendChat(); });
-
-  /* ============ settings sheet ============ */
-  const sheetBg=$('#sheetBg');
-  function openSheet(){
-    $('#nm0').value=names[0]; $('#nm1').value=names[1]; $('#nm2').value=names[2];
-    $('#swSound').classList.toggle('on',settings.sound);
-    $('#swSpeak').classList.toggle('on',settings.speak);
-    $('#swMirror').classList.toggle('on',settings.mirror);
-    sheetBg.classList.add('show');
+  cam.classList.toggle('mirror',settings.facing==='user'&&settings.mirror);
+  sheetBg.classList.remove('show');
+}
+$('#btnSet').addEventListener('click',openSheet);
+$('#sheetClose').addEventListener('click',closeSheet);
+sheetBg.addEventListener('click',e=>{if(e.target===sheetBg)closeSheet();});
+function bindSw(id,key){$(id).addEventListener('click',()=>{settings[key]=!settings[key];
+  $(id).classList.toggle('on',settings[key]);LS.set('set',settings);refreshSound();
+  if(key==='gyro'&&settings.gyro)enableGyro();});}
+bindSw('#swSound','sound');bindSw('#swSpeak','speak');bindSw('#swAI','ai');
+bindSw('#swGyro','gyro');bindSw('#swMirror','mirror');
+$('#sheetReset').addEventListener('click',()=>{
+  if(confirm('Nullstille navn og innstillinger?')){
+    try{localStorage.removeItem('arfest.names');localStorage.removeItem('arfest.set');
+      localStorage.removeItem('arfest.iosHint');}catch(e){}
+    names=['Alpha','Sigma','Beta'];
+    Object.assign(settings,{sound:true,speak:true,ai:true,gyro:true,mirror:true,facing:'environment'});
+    bots.forEach((b,i)=>b.name=names[i]);refreshSound();closeSheet();say('Nullstilt ✨');
   }
-  function closeSheet(){
-    names=[ $('#nm0').value.trim()||'Alpha', $('#nm1').value.trim()||'Sigma', $('#nm2').value.trim()||'Beta' ];
-    figs.forEach((f,i)=>f.name=names[i]);
-    LS.set('names',names); LS.set('set',settings);
-    refreshSound();
-    cam.classList.toggle('mirror', settings.facing==='user'&&settings.mirror);
-    sheetBg.classList.remove('show');
+});
+
+/* ============ iOS install hint ============ */
+function maybeIosHint(){
+  const iOS=/iP(hone|ad|od)/.test(navigator.platform)||(/Mac/.test(navigator.platform)&&'ontouchend'in document);
+  const standalone=navigator.standalone||matchMedia('(display-mode: standalone)').matches;
+  if(iOS&&!standalone&&!LS.get('iosHint',false)){
+    const el=$('#iosHint');el.style.display='flex';
+    setTimeout(()=>{el.style.display='none';},9000);
   }
-  $('#btnSet').addEventListener('click',openSheet);
-  $('#sheetClose').addEventListener('click',closeSheet);
-  sheetBg.addEventListener('click',e=>{ if(e.target===sheetBg)closeSheet(); });
-  function bindSw(id,key){ $(id).addEventListener('click',()=>{ settings[key]=!settings[key];
-    $(id).classList.toggle('on',settings[key]); LS.set('set',settings); refreshSound(); }); }
-  bindSw('#swSound','sound'); bindSw('#swSpeak','speak'); bindSw('#swMirror','mirror');
-  $('#sheetReset').addEventListener('click',()=>{
-    if(confirm('Nullstille navn, innstillinger og rekord?')){
-      try{ localStorage.removeItem('arfest.names'); localStorage.removeItem('arfest.set');
-        localStorage.removeItem('arfest.iosHint'); }catch(e){}
-      names=['Alpha','Sigma','Beta']; Object.assign(settings,{sound:true,speak:true,mirror:true,facing:'environment',hs:0});
-      figs.forEach((f,i)=>f.name=names[i]); refreshSound(); closeSheet(); say('Nullstilt ✨');
-    }
-  });
+}
+$('#iosClose').addEventListener('click',()=>{$('#iosHint').style.display='none';LS.set('iosHint',true);});
 
-  /* ============ iOS install hint ============ */
-  function maybeIosHint(){
-    const iOS=/iP(hone|ad|od)/.test(navigator.platform)||(/Mac/.test(navigator.platform)&&'ontouchend'in document);
-    const standalone=navigator.standalone||matchMedia('(display-mode: standalone)').matches;
-    if(iOS && !standalone && !LS.get('iosHint',false)){
-      const el=$('#iosHint'); el.style.display='flex';
-      setTimeout(()=>{ el.style.display='none'; },9000);
-    }
-  }
-  $('#iosClose').addEventListener('click',()=>{ $('#iosHint').style.display='none'; LS.set('iosHint',true); });
-
-  /* ============ boot ============ */
-  makeFigs(); resize();
-  // gentle idle preview behind the veil so it never looks dead
-  running=true; t0=performance.now(); loop();
-
-  // debug hook for automated screenshots (no camera hardware)
-  window.__demo=function(){
-    $('#veil').classList.add('hide');
-    settings.sound=false;
-    let k=0; (function fake(){ // synthesize a beat
-      bass=0.5+0.4*Math.sin(k*0.3); mid=0.4+0.3*Math.sin(k*0.5+1);
-      treble=0.3+0.3*Math.sin(k*0.7+2); energy=0.7; if(k%12===0)kick(); k++;
-      setTimeout(fake,60);
-    })();
-    figTalk(figs[1],'Wallah, se på oss danse, habibi! 🎶');
-  };
-})();
+/* ============ idle preview behind veil + demo hook ============ */
+running=true;clock.start();loop();
+window.__demo=function(){
+  $('#veil').classList.add('hide');
+  demoAudio=true;
+  setTimeout(()=>bots[1].talk('Wallah, vi er i ekte 3D nå, habibi! 🎶'),400);
+};
 </script>
 </body>
 </html>
