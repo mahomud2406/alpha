@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05060a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AR Fest">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20180%20180'%3E%3Cdefs%3E%3ClinearGradient%20id='g'%20x1='0'%20y1='0'%20x2='1'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%2339f0d4'/%3E%3Cstop%20offset='.5'%20stop-color='%238b5cf6'/%3E%3Cstop%20offset='1'%20stop-color='%23f5c451'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width='180'%20height='180'%20rx='40'%20fill='%23070a12'/%3E%3Ccircle%20cx='90'%20cy='74'%20r='40'%20fill='url(%23g)'/%3E%3Ccircle%20cx='78'%20cy='68'%20r='6'%20fill='%23070a12'/%3E%3Ccircle%20cx='102'%20cy='68'%20r='6'%20fill='%23070a12'/%3E%3Cpath%20d='M74%2086%20q16%2014%2032%200'%20stroke='%23070a12'%20stroke-width='6'%20fill='none'%20stroke-linecap='round'/%3E%3Crect%20x='72'%20y='120'%20width='36'%20height='40'%20rx='10'%20fill='url(%23g)'/%3E%3C/svg%3E">
+<title>ALPHA AR — Dansefest</title>
+<style>
+  :root{
+    --bg:#05060a; --ink:#eef1f7; --dim:#9aa3b6;
+    --teal:#39f0d4; --violet:#8b5cf6; --gold:#f5c451;
+    --panel:rgba(12,14,22,.62); --stroke:rgba(238,241,247,.14);
+    --btn:rgba(255,255,255,.08);
+  }
+  @media (prefers-color-scheme:light){
+    :root{
+      --bg:#eef1f6; --ink:#10131c; --dim:#5a6376;
+      --panel:rgba(255,255,255,.68); --stroke:rgba(16,19,28,.14);
+      --btn:rgba(16,19,28,.06);
+    }
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+  body{
+    background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"Segoe UI",system-ui,sans-serif;
+    position:fixed;inset:0;
+  }
+  ::selection{background:var(--teal);color:#05060a}
+
+  #cam{
+    position:absolute;inset:0;width:100%;height:100%;
+    object-fit:cover;background:#000;z-index:0;
+    transform:scaleX(1);
+  }
+  #cam.mirror{transform:scaleX(-1)}
+  #stage{position:absolute;inset:0;width:100%;height:100%;z-index:1;touch-action:manipulation}
+
+  /* ---------- top bar ---------- */
+  .top{
+    position:absolute;left:0;right:0;top:0;z-index:5;
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:calc(env(safe-area-inset-top) + 12px) calc(env(safe-area-inset-right) + 14px) 12px calc(env(safe-area-inset-left) + 14px);
+    background:linear-gradient(180deg,rgba(0,0,0,.45),transparent);
+    pointer-events:none;
+  }
+  .brand{display:flex;align-items:center;gap:10px;pointer-events:auto}
+  .brand .dot{
+    width:12px;height:12px;border-radius:50%;
+    background:conic-gradient(from 0deg,var(--teal),var(--violet),var(--gold),var(--teal));
+    box-shadow:0 0 14px rgba(139,92,246,.8);animation:spin 6s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .brand b{font-size:14px;letter-spacing:.22em;font-weight:800;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+  .brand b span{color:var(--gold)}
+  .energy{
+    flex:1;max-width:180px;height:8px;border-radius:99px;overflow:hidden;
+    background:rgba(255,255,255,.16);pointer-events:auto;
+    box-shadow:inset 0 0 0 1px var(--stroke);
+  }
+  .energy i{
+    display:block;height:100%;width:0%;
+    background:linear-gradient(90deg,var(--teal),var(--violet),var(--gold));
+    transition:width .08s linear;
+  }
+
+  /* ---------- tabs ---------- */
+  .tabs{
+    position:absolute;left:50%;transform:translateX(-50%);
+    top:calc(env(safe-area-inset-top) + 54px);z-index:6;
+    display:flex;gap:6px;padding:5px;
+    border:1px solid var(--stroke);border-radius:99px;
+    background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  }
+  .tabs a{
+    font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
+    padding:8px 14px;border-radius:99px;text-decoration:none;font-weight:600;
+    min-height:32px;display:flex;align-items:center;
+  }
+  .tabs a.act{color:#05060a;background:linear-gradient(90deg,var(--teal),var(--gold))}
+
+  /* ---------- bottom dock ---------- */
+  .dock{
+    position:absolute;left:0;right:0;bottom:0;z-index:6;
+    display:flex;flex-direction:column;gap:10px;
+    padding:14px calc(env(safe-area-inset-right) + 14px) calc(env(safe-area-inset-bottom) + 14px) calc(env(safe-area-inset-left) + 14px);
+    background:linear-gradient(0deg,rgba(0,0,0,.5),transparent);
+  }
+  .rowbtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .btn{
+    min-width:48px;min-height:48px;padding:0 16px;
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    border:1px solid var(--stroke);border-radius:16px;
+    background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    color:var(--ink);font-size:15px;font-weight:600;letter-spacing:.02em;
+    cursor:pointer;user-select:none;transition:transform .12s,background .2s,border-color .2s;
+  }
+  .btn:active{transform:scale(.94)}
+  .btn.on{border-color:var(--teal);color:var(--teal);box-shadow:0 0 18px rgba(57,240,212,.28)}
+  .btn .ic{font-size:19px;line-height:1}
+  .btn.icon{padding:0;width:52px}
+  .chatrow{display:flex;gap:10px;align-items:center}
+  .chatrow input{
+    flex:1;min-height:48px;padding:0 18px;
+    border:1px solid var(--stroke);border-radius:16px;
+    background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    color:var(--ink);font-size:16px;outline:none;
+  }
+  .chatrow input::placeholder{color:var(--dim)}
+  .send{
+    min-width:52px;min-height:48px;border:none;border-radius:16px;cursor:pointer;
+    background:linear-gradient(120deg,var(--teal),var(--violet));color:#05060a;
+    font-size:20px;font-weight:800;transition:transform .12s;
+  }
+  .send:active{transform:scale(.94)}
+
+  /* ---------- start / permission overlay ---------- */
+  .veil{
+    position:absolute;inset:0;z-index:20;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:20px;text-align:center;padding:8vh 28px calc(env(safe-area-inset-bottom) + 28px);
+    background:radial-gradient(120% 90% at 50% 12%,rgba(139,92,246,.22),transparent 60%),var(--bg);
+  }
+  .veil.hide{display:none}
+  .veil .mascot{
+    width:120px;height:120px;border-radius:32px;
+    background:conic-gradient(from 0deg,var(--teal),var(--violet),var(--gold),var(--teal));
+    box-shadow:0 20px 80px rgba(139,92,246,.45);
+    display:flex;align-items:center;justify-content:center;font-size:64px;
+    animation:float 3s ease-in-out infinite;
+  }
+  @keyframes float{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-14px) rotate(3deg)}}
+  .veil h1{font-size:clamp(30px,8vw,48px);font-weight:900;letter-spacing:-.02em;line-height:1}
+  .veil h1 span{
+    background:linear-gradient(90deg,var(--teal),var(--violet),var(--gold));
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .veil p{color:var(--dim);max-width:440px;font-size:16px;line-height:1.6}
+  .veil .go{
+    margin-top:6px;min-height:56px;padding:0 34px;border:none;border-radius:20px;cursor:pointer;
+    font-size:18px;font-weight:800;color:#05060a;
+    background:linear-gradient(120deg,var(--teal),var(--gold));
+    box-shadow:0 14px 40px rgba(57,240,212,.35);transition:transform .12s;
+  }
+  .veil .go:active{transform:scale(.95)}
+  .veil .fine{font-size:12px;color:var(--dim);letter-spacing:.03em;max-width:380px}
+  .veil .err{color:#ff6b81;font-size:14px;min-height:18px;max-width:420px}
+
+  /* ---------- toast ---------- */
+  .toast{
+    position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 104px);z-index:15;
+    transform:translate(-50%,-16px);opacity:0;pointer-events:none;
+    background:var(--panel);border:1px solid var(--stroke);border-radius:14px;
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    padding:10px 18px;font-size:14px;font-weight:600;max-width:88vw;text-align:center;
+    transition:opacity .3s,transform .3s;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+
+  /* ---------- iOS install hint ---------- */
+  .ios{
+    position:absolute;left:50%;transform:translateX(-50%);
+    bottom:calc(env(safe-area-inset-bottom) + 150px);z-index:15;
+    display:none;align-items:center;gap:10px;max-width:90vw;
+    background:var(--panel);border:1px solid var(--stroke);border-radius:16px;
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    padding:12px 16px;font-size:13px;color:var(--ink);line-height:1.4;
+  }
+  .ios b{color:var(--gold)}
+  .ios .x{margin-left:6px;min-width:32px;min-height:32px;border:none;background:var(--btn);
+    color:var(--ink);border-radius:10px;font-size:16px;cursor:pointer}
+
+  /* ---------- settings sheet ---------- */
+  .sheet-bg{
+    position:absolute;inset:0;z-index:25;background:rgba(0,0,0,.5);
+    display:none;align-items:flex-end;justify-content:center;
+  }
+  .sheet-bg.show{display:flex}
+  .sheet{
+    width:100%;max-width:520px;
+    background:var(--bg);border:1px solid var(--stroke);
+    border-radius:24px 24px 0 0;
+    padding:20px 22px calc(env(safe-area-inset-bottom) + 22px);
+    box-shadow:0 -20px 60px rgba(0,0,0,.5);
+  }
+  .sheet h2{font-size:18px;font-weight:800;margin-bottom:4px}
+  .sheet .sub{font-size:13px;color:var(--dim);margin-bottom:18px}
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+  .field input{
+    width:100%;min-height:48px;padding:0 16px;border-radius:14px;
+    border:1px solid var(--stroke);background:var(--btn);color:var(--ink);font-size:16px;outline:none;
+  }
+  .toggle{display:flex;align-items:center;justify-content:space-between;
+    min-height:48px;padding:0 4px;border-bottom:1px solid var(--stroke)}
+  .toggle span{font-size:15px;font-weight:600}
+  .sw{width:52px;height:30px;border-radius:99px;background:var(--btn);position:relative;cursor:pointer;
+    border:1px solid var(--stroke);transition:background .2s}
+  .sw.on{background:linear-gradient(90deg,var(--teal),var(--violet))}
+  .sw i{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;
+    transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+  .sw.on i{left:25px}
+  .sheet .close{
+    margin-top:20px;width:100%;min-height:52px;border:none;border-radius:16px;cursor:pointer;
+    background:linear-gradient(120deg,var(--teal),var(--gold));color:#05060a;font-size:16px;font-weight:800;
+  }
+  .sheet .reset{
+    margin-top:10px;width:100%;min-height:48px;border:1px solid var(--stroke);border-radius:16px;cursor:pointer;
+    background:transparent;color:var(--dim);font-size:14px;font-weight:600;
+  }
+</style>
+</head>
+<body>
+
+<video id="cam" playsinline autoplay muted></video>
+<canvas id="stage"></canvas>
+
+<div class="top">
+  <div class="brand"><span class="dot"></span><b>ALPHA <span>AR</span></b></div>
+  <div class="energy"><i id="energyBar"></i></div>
+</div>
+
+<div class="tabs">
+  <a href="index.html">Alpha</a>
+  <a href="alphasigma.html">AlphaSigma</a>
+  <a href="ar.html" class="act">AR Fest</a>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="ios" id="iosHint">
+  <span>📲 Installer: trykk <b>Del</b> → <b>Legg til på Hjem-skjerm</b></span>
+  <button class="x" id="iosClose" aria-label="Lukk">✕</button>
+</div>
+
+<div class="dock">
+  <div class="rowbtns">
+    <button class="btn icon" id="btnFlip" title="Bytt kamera"><span class="ic">🔄</span></button>
+    <button class="btn on" id="btnSound" title="Dans til lyd"><span class="ic">🔊</span></button>
+    <button class="btn" id="btnMic" title="Snakk"><span class="ic">🎤</span></button>
+    <button class="btn" id="btnParty" title="Fest!"><span class="ic">🎉</span></button>
+    <button class="btn icon" id="btnSet" title="Innstillinger"><span class="ic">⚙️</span></button>
+  </div>
+  <div class="chatrow">
+    <input id="chatInput" type="text" placeholder="Si noe til figurene…" autocomplete="off" enterkeyhint="send">
+    <button class="send" id="chatSend" aria-label="Send">➤</button>
+  </div>
+</div>
+
+<div class="veil" id="veil">
+  <div class="mascot">🕺</div>
+  <h1>Bli med på <span>dansefesten</span></h1>
+  <p>Pek kameraet ut i rommet, så dukker det opp neon-kompiser foran deg. Snakk med dem, spill musikk — så danser de til lyden. Wallah, de gir seg aldri.</p>
+  <button class="go" id="btnStart">🎬 Start kamera</button>
+  <div class="err" id="veilErr"></div>
+  <div class="fine">Krever tilgang til kamera og mikrofon. Alt skjer lokalt på telefonen din — ingenting lastes opp noe sted.</div>
+</div>
+
+<div class="sheet-bg" id="sheetBg">
+  <div class="sheet">
+    <h2>Innstillinger</h2>
+    <div class="sub">Gi kompisene navn og styr festen.</div>
+    <div class="field"><label>Navn på figur 1</label><input id="nm0" maxlength="14"></div>
+    <div class="field"><label>Navn på figur 2</label><input id="nm1" maxlength="14"></div>
+    <div class="field"><label>Navn på figur 3</label><input id="nm2" maxlength="14"></div>
+    <div class="toggle"><span>Dans til lyd</span><div class="sw" id="swSound"><i></i></div></div>
+    <div class="toggle"><span>Figurene snakker</span><div class="sw" id="swSpeak"><i></i></div></div>
+    <div class="toggle"><span>Speil frontkamera</span><div class="sw" id="swMirror"><i></i></div></div>
+    <button class="close" id="sheetClose">Ferdig</button>
+    <button class="reset" id="sheetReset">Nullstill alt</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const $ = s => document.querySelector(s);
+  const cam = $('#cam'), stage = $('#stage'), ctx = stage.getContext('2d');
+  const energyBar = $('#energyBar');
+
+  /* ============ persistent state (localStorage) ============ */
+  const LS = {
+    get(k,d){ try{ const v=localStorage.getItem('arfest.'+k); return v==null?d:JSON.parse(v);}catch(e){return d;} },
+    set(k,v){ try{ localStorage.setItem('arfest.'+k,JSON.stringify(v)); }catch(e){} }
+  };
+  const settings = Object.assign(
+    { sound:true, speak:true, mirror:true, facing:'environment', hs:0 },
+    LS.get('set',{})
+  );
+  let names = LS.get('names', ['Alpha','Sigma','Beta']);
+
+  /* ============ web app manifest as data-URI (single file) ============ */
+  (function(){
+    const icon = "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20512%20512'%3E%3Cdefs%3E%3ClinearGradient%20id='g'%20x1='0'%20y1='0'%20x2='1'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%2339f0d4'/%3E%3Cstop%20offset='.5'%20stop-color='%238b5cf6'/%3E%3Cstop%20offset='1'%20stop-color='%23f5c451'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width='512'%20height='512'%20rx='112'%20fill='%23070a12'/%3E%3Ccircle%20cx='256'%20cy='210'%20r='112'%20fill='url(%23g)'/%3E%3Crect%20x='206'%20y='340'%20width='100'%20height='112'%20rx='28'%20fill='url(%23g)'/%3E%3C/svg%3E";
+    const manifest = {
+      name:"ALPHA AR — Dansefest", short_name:"AR Fest",
+      description:"Live AR-figurer som danser til lyd og snakker tilbake.",
+      start_url:"./ar.html", scope:"./", display:"standalone",
+      background_color:"#05060a", theme_color:"#05060a", lang:"no",
+      orientation:"portrait",
+      icons:[
+        {src:icon,sizes:"512x512",type:"image/svg+xml",purpose:"any"},
+        {src:icon,sizes:"512x512",type:"image/svg+xml",purpose:"maskable"}
+      ]
+    };
+    const link=document.createElement('link');
+    link.rel='manifest';
+    link.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(manifest));
+    document.head.appendChild(link);
+  })();
+
+  /* ============ toast ============ */
+  const toast = $('#toast'); let toastT=0;
+  function say(msg){ toast.textContent=msg; toast.classList.add('show');
+    clearTimeout(toastT); toastT=setTimeout(()=>toast.classList.remove('show'),2600); }
+
+  /* ============ canvas sizing ============ */
+  let W=0,H=0,DPR=1;
+  function resize(){
+    DPR=Math.min(devicePixelRatio||1,2);
+    W=innerWidth; H=innerHeight;
+    stage.width=W*DPR; stage.height=H*DPR;
+    stage.style.width=W+'px'; stage.style.height=H+'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    layout();
+  }
+  addEventListener('resize',resize);
+  addEventListener('orientationchange',()=>setTimeout(resize,300));
+
+  /* ============ figures ============ */
+  const PALS=[
+    {a:'#39f0d4',b:'#0e8f7c',aura:'rgba(57,240,212,',pitch:1.0,persona:'alpha'},
+    {a:'#f5c451',b:'#c07a10',aura:'rgba(245,196,81,',pitch:0.82,persona:'sigma'},
+    {a:'#a78bfa',b:'#6d28d9',aura:'rgba(167,139,250,',pitch:1.28,persona:'beta'}
+  ];
+  const figs=[];
+  function makeFigs(){
+    figs.length=0;
+    for(let i=0;i<3;i++){
+      figs.push({
+        i, name:names[i], pal:PALS[i],
+        xN:[0.24,0.5,0.76][i], baseYN:0.7,
+        phase:i*2.1, bounce:0, arm:0, head:0, spin:0, spinV:0,
+        talkUntil:0, bubble:'', mouth:0, size:1
+      });
+    }
+    layout();
+  }
+  function layout(){
+    const base=Math.min(W,H);
+    figs.forEach(f=>{ f.x=f.xN*W; f.baseY=f.baseYN*H; f.R=base*0.11*f.size; });
+  }
+
+  /* ============ audio (dance to sound) ============ */
+  let audioCtx=null, analyser=null, freqData=null;
+  let bass=0, mid=0, treble=0, energy=0, beat=0, lastBass=0;
+  function initAudio(stream){
+    try{
+      const AC=window.AudioContext||window.webkitAudioContext;
+      audioCtx=new AC();
+      const src=audioCtx.createMediaStreamSource(stream);
+      analyser=audioCtx.createAnalyser();
+      analyser.fftSize=256; analyser.smoothingTimeConstant=0.8;
+      src.connect(analyser);
+      freqData=new Uint8Array(analyser.frequencyBinCount);
+    }catch(e){ analyser=null; }
+  }
+  function readAudio(){
+    if(!analyser||!settings.sound){
+      // idle sway when sound is off
+      bass*=0.9; mid*=0.9; treble*=0.9; energy*=0.9; beat*=0.86; return;
+    }
+    analyser.getByteFrequencyData(freqData);
+    const n=freqData.length;
+    let b=0,m=0,t=0;
+    const bEnd=Math.floor(n*0.12), mEnd=Math.floor(n*0.45);
+    for(let i=0;i<n;i++){ const v=freqData[i]/255; if(i<bEnd)b+=v; else if(i<mEnd)m+=v; else t+=v; }
+    b/=bEnd; m/=(mEnd-bEnd); t/=(n-mEnd);
+    bass+=(b-bass)*0.35; mid+=(m-mid)*0.3; treble+=(t-treble)*0.25;
+    energy=Math.min(1,(bass*1.3+mid+treble*0.7)/2.2);
+    // beat detection on bass rising edge
+    if(bass-lastBass>0.11 && bass>0.28){ beat=1; kick(); }
+    lastBass=bass; beat*=0.86;
+  }
+  function kick(){ figs.forEach(f=>{ f.spinV += (Math.random()<0.5?-1:1)*(0.6+Math.random()*0.5); }); }
+
+  /* ============ drawing ============ */
+  function roundRect(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+  function drawFigure(f,tS){
+    const indiv=0.6+0.4*Math.sin(tS*3+f.phase);
+    const b=(settings.sound?bass:0.12+0.06*Math.sin(tS*2+f.phase))*indiv;
+    const jump=b*f.R*0.55 + beat*f.R*0.18;
+    const y=f.baseY - jump;
+    const stretch=1+b*0.18 - beat*0.05;
+    const squash=1-b*0.12 + beat*0.05;
+    const tilt=Math.sin(tS*2.4+f.phase)*(0.12+mid*0.25) + f.spin;
+    f.spinV*=0.9; f.spin+=f.spinV*0.05; f.spin*=0.9;
+    const armSw=Math.sin(tS*6+f.phase)*(0.5+mid*1.1);
+    const armUp=treble*0.9;
+    const headBob=Math.sin(tS*8+f.phase)*(2+treble*7);
+    const talking=performance.now()<f.talkUntil;
+    f.mouth += ((talking?0.6+0.4*Math.sin(tS*22):0.12)-f.mouth)*0.3;
+
+    ctx.save();
+    // shadow on ground
+    ctx.save();
+    ctx.translate(f.x,f.baseY+f.R*0.95);
+    ctx.scale(1,0.32);
+    const shA=0.28-b*0.1;
+    ctx.fillStyle='rgba(0,0,0,'+Math.max(0.08,shA)+')';
+    ctx.beginPath(); ctx.arc(0,0,f.R*(0.75+b*0.3),0,7); ctx.fill();
+    ctx.restore();
+
+    ctx.translate(f.x,y);
+    ctx.rotate(tilt*0.12);
+
+    // aura glow (pulses with energy)
+    const glow=0.25+energy*0.6+beat*0.3;
+    const g=ctx.createRadialGradient(0,0,f.R*0.2,0,0,f.R*1.9);
+    g.addColorStop(0,f.pal.aura+(0.5*glow)+')');
+    g.addColorStop(1,f.pal.aura+'0)');
+    ctx.fillStyle=g;
+    ctx.beginPath(); ctx.arc(0,0,f.R*1.9,0,7); ctx.fill();
+
+    // legs (bounce alternately)
+    const legSw=Math.sin(tS*6+f.phase)*(6+b*14);
+    ctx.lineCap='round'; ctx.lineWidth=f.R*0.22; ctx.strokeStyle=f.pal.b;
+    for(const s of [-1,1]){
+      ctx.beginPath();
+      ctx.moveTo(s*f.R*0.28,f.R*0.55);
+      ctx.quadraticCurveTo(s*f.R*0.34,f.R*0.9, s*f.R*0.3+ s*legSw*0.4, f.R*1.05+ (s>0?legSw:-legSw));
+      ctx.stroke();
+    }
+
+    // body (rounded, gradient, squash/stretch)
+    ctx.save();
+    ctx.scale(squash,stretch);
+    const bg=ctx.createLinearGradient(0,-f.R,0,f.R);
+    bg.addColorStop(0,f.pal.a); bg.addColorStop(1,f.pal.b);
+    ctx.fillStyle=bg;
+    ctx.shadowColor=f.pal.aura+'0.7)'; ctx.shadowBlur=18+energy*22;
+    ctx.beginPath();
+    ctx.moveTo(0,-f.R);
+    ctx.bezierCurveTo(f.R*1.05,-f.R, f.R*0.95,f.R*0.8, 0,f.R*0.75);
+    ctx.bezierCurveTo(-f.R*0.95,f.R*0.8, -f.R*1.05,-f.R, 0,-f.R);
+    ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.restore();
+
+    // arms (swing/raise with music)
+    ctx.lineWidth=f.R*0.2; ctx.strokeStyle=f.pal.a;
+    for(const s of [-1,1]){
+      const up=armUp*f.R*(s>0?1:1);
+      const sw=s*armSw*f.R*0.5;
+      ctx.beginPath();
+      ctx.moveTo(s*f.R*0.55,-f.R*0.15);
+      ctx.quadraticCurveTo(s*f.R*0.95, -f.R*0.2 - up, s*f.R*0.9+sw, -f.R*0.6 - up);
+      ctx.stroke();
+      // hands
+      ctx.fillStyle=f.pal.a;
+      ctx.beginPath(); ctx.arc(s*f.R*0.9+sw,-f.R*0.6-up,f.R*0.12,0,7); ctx.fill();
+    }
+
+    // face
+    ctx.save();
+    ctx.translate(0,-f.R*0.35+headBob*0.02);
+    // eyes
+    ctx.fillStyle='#0b0d14';
+    const eyeX=f.R*0.28, eyeY=-f.R*0.02, eyeR=f.R*0.13;
+    for(const s of [-1,1]){
+      ctx.beginPath(); ctx.arc(s*eyeX,eyeY,eyeR,0,7); ctx.fill();
+      ctx.fillStyle='#fff';
+      ctx.beginPath(); ctx.arc(s*eyeX+eyeR*0.3,eyeY-eyeR*0.3,eyeR*0.4,0,7); ctx.fill();
+      ctx.fillStyle='#0b0d14';
+    }
+    // mouth (opens when talking / smiles)
+    ctx.strokeStyle='#0b0d14'; ctx.lineWidth=f.R*0.08; ctx.lineCap='round';
+    const mo=f.mouth;
+    if(mo>0.25){
+      ctx.fillStyle='#0b0d14';
+      ctx.beginPath(); ctx.ellipse(0,f.R*0.26,f.R*0.16,f.R*0.1*mo+f.R*0.05,0,0,7); ctx.fill();
+    }else{
+      ctx.beginPath();
+      ctx.moveTo(-f.R*0.2,f.R*0.2);
+      ctx.quadraticCurveTo(0,f.R*0.36, f.R*0.2,f.R*0.2);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    ctx.restore();
+
+    // name label
+    ctx.save();
+    ctx.font='600 '+Math.round(f.R*0.28)+'px -apple-system,Segoe UI,sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    const label=f.name, tw=ctx.measureText(label).width;
+    const lx=f.x, ly=y-f.R*1.35, pad=f.R*0.18;
+    ctx.fillStyle='rgba(8,10,18,.55)';
+    roundRect(lx-tw/2-pad,ly-f.R*0.22,tw+pad*2,f.R*0.44,f.R*0.22); ctx.fill();
+    ctx.fillStyle=f.pal.a; ctx.fillText(label,lx,ly);
+    ctx.restore();
+
+    // speech bubble
+    if(talking && f.bubble){
+      drawBubble(f, f.bubble, y);
+    }
+  }
+  function drawBubble(f,text,fy){
+    ctx.save();
+    ctx.font='500 '+Math.round(Math.min(W,H)*0.036)+'px -apple-system,Segoe UI,sans-serif';
+    const maxW=Math.min(W*0.62,320);
+    const words=text.split(' '); const lines=[]; let line='';
+    for(const w of words){
+      const test=line?line+' '+w:w;
+      if(ctx.measureText(test).width>maxW && line){ lines.push(line); line=w; }
+      else line=test;
+    }
+    if(line)lines.push(line);
+    const lh=Math.min(W,H)*0.05, pad=14;
+    let bw=0; lines.forEach(l=>bw=Math.max(bw,ctx.measureText(l).width));
+    bw+=pad*2; const bh=lines.length*lh+pad*1.4;
+    let bx=f.x-bw/2; bx=Math.max(10,Math.min(W-bw-10,bx));
+    const by=fy-f.R*1.9-bh;
+    ctx.fillStyle='rgba(255,255,255,.96)';
+    ctx.shadowColor='rgba(0,0,0,.4)'; ctx.shadowBlur=18; ctx.shadowOffsetY=6;
+    roundRect(bx,by,bw,bh,16); ctx.fill();
+    // tail
+    ctx.beginPath();
+    ctx.moveTo(f.x-8,by+bh-1); ctx.lineTo(f.x,by+bh+12); ctx.lineTo(f.x+8,by+bh-1); ctx.closePath(); ctx.fill();
+    ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+    ctx.fillStyle='#12141c'; ctx.textAlign='left'; ctx.textBaseline='top';
+    lines.forEach((l,i)=>ctx.fillText(l,bx+pad,by+pad*0.7+i*lh));
+    ctx.restore();
+  }
+
+  /* ============ main loop ============ */
+  let running=false, t0=performance.now();
+  function loop(){
+    if(!running)return;
+    const tS=(performance.now()-t0)/1000;
+    readAudio();
+    energyBar.style.width=Math.round(Math.min(100,energy*130))+'%';
+    if(energy*130>settings.hs){ settings.hs=energy*130; }
+    ctx.clearRect(0,0,W,H);
+    // sort by y so nearer draws on top (all same but keeps stable)
+    figs.forEach(f=>drawFigure(f,tS));
+    requestAnimationFrame(loop);
+  }
+
+  /* ============ camera ============ */
+  let stream=null;
+  async function startCamera(){
+    const err=$('#veilErr'); err.textContent='';
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+      err.textContent='Nettleseren din støtter ikke kamera-API. Prøv Safari eller Chrome.'; return;
+    }
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({
+        video:{facingMode:settings.facing,width:{ideal:1280},height:{ideal:720}},
+        audio:true
+      });
+    }catch(e){
+      // retry without audio if audio blocked
+      try{
+        stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:settings.facing},audio:false});
+        say('Uten mikrofon — figurene sviver i stedet 💃');
+      }catch(e2){
+        err.textContent='Fikk ikke tilgang til kamera. Sjekk at du tillot det, og at siden kjører på https.';
+        return;
+      }
+    }
+    cam.srcObject=stream;
+    cam.classList.toggle('mirror', settings.facing==='user' && settings.mirror);
+    try{ await cam.play(); }catch(e){}
+    if(stream.getAudioTracks().length){ initAudio(stream); }
+    if(audioCtx && audioCtx.state==='suspended'){ audioCtx.resume(); }
+    $('#veil').classList.add('hide');
+    if(!running){ running=true; t0=performance.now(); loop(); }
+    maybeIosHint();
+    // wake up synth on iOS within the user gesture chain
+    primeSpeech();
+    say('Festen er i gang! Snakk eller spill musikk 🎶');
+  }
+  async function flipCamera(){
+    settings.facing = settings.facing==='user'?'environment':'user';
+    LS.set('set',settings);
+    if(stream){ stream.getTracks().forEach(t=>t.stop()); }
+    if(audioCtx){ try{audioCtx.close();}catch(e){} audioCtx=null; analyser=null; }
+    await startCamera();
+  }
+
+  /* ============ speech synthesis (figures talk) ============ */
+  let voices=[];
+  function loadVoices(){ voices=speechSynthesis.getVoices()||[]; }
+  if('speechSynthesis' in window){
+    loadVoices(); speechSynthesis.onvoiceschanged=loadVoices;
+  }
+  function pickVoice(){
+    return voices.find(v=>/nb|no[-_]/i.test(v.lang)) ||
+           voices.find(v=>/^no/i.test(v.lang)) ||
+           voices.find(v=>/en/i.test(v.lang)) || voices[0];
+  }
+  let primed=false;
+  function primeSpeech(){
+    if(primed||!('speechSynthesis'in window))return; primed=true;
+    try{ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u);}catch(e){}
+  }
+  function speak(text,f){
+    if(!settings.speak||!('speechSynthesis'in window))return;
+    try{
+      const u=new SpeechSynthesisUtterance(text);
+      const v=pickVoice(); if(v){u.voice=v;u.lang=v.lang;} else u.lang='nb-NO';
+      u.pitch=f?f.pal.pitch:1; u.rate=1.02;
+      speechSynthesis.speak(u);
+    }catch(e){}
+  }
+
+  /* ============ personality / replies ============ */
+  const LINES={
+    alpha:{
+      hei:['Halla! Klar for solo queue?','Hei hei, ingen duo trengs her.','Yo! Rift kaller.'],
+      dans:['Se på denne recall-dansen!','ADC-footwork, følg med!','Jeg kiter og danser samtidig.'],
+      idle:['Én game til, jeg lover.','Pingen er 12, mekanikken er ren.','Jungel-timeren i hodet mitt tikker.','Jeg farmer beats nå.'],
+      navn:n=>['Jeg er '+n+', solo carry.','Navnet er '+n+'. GG.']
+    },
+    sigma:{
+      hei:['Wallah, endelig noen som hilser!','Salam habibi! Karak?','Yalla, kom hit!'],
+      dans:['Dette er khaleeji-vibes, habibi!','Karak i hånda, hofta i bevegelse!','Dubai Marina-energi, se her!'],
+      idle:['Fagbrevet henger på veggen, wallah.','Kopp nummer fire, bare oppvarming.','Playlisten min er 90% arabisk.','En dag: Marina. Insha’Allah.'],
+      navn:n=>['Jeg heter '+n+', sertifisert habibi.','Navnet? '+n+'. Wallah ekte.']
+    },
+    beta:{
+      hei:['HEEEI!! Endelig noen!','Åå du snakka til meg?! Beste dagen!','Hallaisen, la oss lage kaos!'],
+      dans:['KAOSMODUS AKTIVERT 🌀','Jeg kan ikke danse men jeg GJØR det!','Wææh se armene mine!!'],
+      idle:['Jeg er så hyped akkurat nå.','Kan vi feste? Vi kan feste sant?','Energi: JA. Plan: NEI.','Elsker deg allerede, ikke gå.'],
+      navn:n=>['JEG ER '+n+'!! Beste figuren!',''+n+', til tjeneste, chaos included!']
+    }
+  };
+  function replyFor(f,msg){
+    const p=LINES[f.pal.persona]; const m=(msg||'').toLowerCase();
+    let pool;
+    if(/hei|halla|salam|yo|heisan|hallo/.test(m)) pool=p.hei;
+    else if(/dans|dance|musikk|beat|fest|party/.test(m)) pool=p.dans;
+    else if(/navn|heter|hvem er du|who/.test(m)) return rand(p.navn(f.name));
+    else if(/glad i|elsker|love|beste/.test(m)) return f.pal.persona==='beta'?'JEG ELSKER DEG OGSÅ!! 💜':'Aww. Tilbake til deg, habibi.';
+    else if(/fagbrev|jobb|eksamen/.test(m)) return f.pal.persona==='sigma'?'FAGBREVET ER I BOKS! Mabrouk til meg selv!':'Gratulerer! Nå kan vi feste.';
+    else if(/karak|chai|te|kaffe/.test(m)) return f.pal.persona==='sigma'?'KARAK!! Du snakker mitt språk, habibi.':'Karak? Sigma blir gæren av glede nå.';
+    else if(/genser|klær/.test(m)) return 'Genser er en livsstil, ikke et plagg. Neste spørsmål.';
+    else if(/dubai|marina|arab/.test(m)) return f.pal.persona==='sigma'?'Dubai Marina, insha’Allah. Snart, habibi.':'Sigma har allerede pakka kofferten mentalt.';
+    else pool=p.idle;
+    return rand(pool);
+  }
+  function rand(a){ return a[Math.floor(Math.random()*a.length)]; }
+
+  function figTalk(f,text){
+    f.bubble=text; f.talkUntil=performance.now()+Math.max(2200,text.length*70);
+    f.spinV+=(Math.random()<0.5?-1:1)*0.8;
+    speak(text,f);
+  }
+  function handleMessage(msg){
+    if(!msg.trim())return;
+    // which figure? by name mention, else random
+    let f=figs.find(x=>msg.toLowerCase().includes(x.name.toLowerCase()));
+    if(!f) f=figs[Math.floor(Math.random()*figs.length)];
+    const rep=replyFor(f,msg);
+    setTimeout(()=>figTalk(f,rep),160);
+    // sometimes a friend chimes in
+    if(Math.random()<0.4){
+      const other=rand(figs.filter(x=>x!==f));
+      setTimeout(()=>figTalk(other,rand(LINES[other.pal.persona].idle)),1200);
+    }
+  }
+
+  /* ============ tap a figure to make it talk ============ */
+  stage.addEventListener('pointerdown',e=>{
+    const r=stage.getBoundingClientRect();
+    const px=e.clientX-r.left, py=e.clientY-r.top;
+    let hit=null,best=1e9;
+    figs.forEach(f=>{
+      const dx=px-f.x, dy=py-(f.baseY-f.R*0.2);
+      const d=Math.hypot(dx,dy);
+      if(d<f.R*1.5 && d<best){ best=d; hit=f; }
+    });
+    if(hit){
+      primeSpeech();
+      const p=LINES[hit.pal.persona];
+      figTalk(hit, rand(Math.random()<0.5?p.dans:p.idle));
+      hit.spinV+=1.1;
+    }
+  });
+
+  /* ============ speech recognition (bonus, where supported) ============ */
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  const btnMic=$('#btnMic'); let rec=null, listening=false;
+  if(!SR){ btnMic.style.display='none'; }
+  function toggleMic(){
+    if(!SR)return;
+    if(listening){ try{rec.stop();}catch(e){} return; }
+    try{
+      rec=new SR(); rec.lang='nb-NO'; rec.interimResults=false; rec.maxAlternatives=1;
+      rec.onstart=()=>{ listening=true; btnMic.classList.add('on'); say('Hører etter… snakk nå 🎤'); };
+      rec.onerror=()=>{ say('Fikk ikke tak i stemmen din — bruk chatten 🙂'); };
+      rec.onend=()=>{ listening=false; btnMic.classList.remove('on'); };
+      rec.onresult=ev=>{ const txt=ev.results[0][0].transcript; say('«'+txt+'»'); handleMessage(txt); };
+      rec.start();
+    }catch(e){ say('Stemmegjenkjenning er ikke tilgjengelig her.'); }
+  }
+
+  /* ============ controls ============ */
+  $('#btnStart').addEventListener('click',startCamera);
+  $('#btnFlip').addEventListener('click',flipCamera);
+  $('#btnMic').addEventListener('click',toggleMic);
+  $('#btnParty').addEventListener('click',()=>{
+    primeSpeech(); beat=1; kick();
+    figs.forEach((f,i)=>setTimeout(()=>figTalk(f,rand(LINES[f.pal.persona].dans)),i*260));
+    say('FEST! 🎉');
+  });
+  const btnSound=$('#btnSound');
+  function refreshSound(){ btnSound.classList.toggle('on',settings.sound);
+    btnSound.querySelector('.ic').textContent=settings.sound?'🔊':'🔈'; }
+  btnSound.addEventListener('click',()=>{ settings.sound=!settings.sound; LS.set('set',settings);
+    refreshSound(); say(settings.sound?'Danser til lyd 🔊':'Lyd av 🔈'); });
+  refreshSound();
+
+  const chatInput=$('#chatInput'), chatSend=$('#chatSend');
+  function sendChat(){ const v=chatInput.value; if(!v.trim())return; primeSpeech();
+    handleMessage(v); chatInput.value=''; }
+  chatSend.addEventListener('click',sendChat);
+  chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter')sendChat(); });
+
+  /* ============ settings sheet ============ */
+  const sheetBg=$('#sheetBg');
+  function openSheet(){
+    $('#nm0').value=names[0]; $('#nm1').value=names[1]; $('#nm2').value=names[2];
+    $('#swSound').classList.toggle('on',settings.sound);
+    $('#swSpeak').classList.toggle('on',settings.speak);
+    $('#swMirror').classList.toggle('on',settings.mirror);
+    sheetBg.classList.add('show');
+  }
+  function closeSheet(){
+    names=[ $('#nm0').value.trim()||'Alpha', $('#nm1').value.trim()||'Sigma', $('#nm2').value.trim()||'Beta' ];
+    figs.forEach((f,i)=>f.name=names[i]);
+    LS.set('names',names); LS.set('set',settings);
+    refreshSound();
+    cam.classList.toggle('mirror', settings.facing==='user'&&settings.mirror);
+    sheetBg.classList.remove('show');
+  }
+  $('#btnSet').addEventListener('click',openSheet);
+  $('#sheetClose').addEventListener('click',closeSheet);
+  sheetBg.addEventListener('click',e=>{ if(e.target===sheetBg)closeSheet(); });
+  function bindSw(id,key){ $(id).addEventListener('click',()=>{ settings[key]=!settings[key];
+    $(id).classList.toggle('on',settings[key]); LS.set('set',settings); refreshSound(); }); }
+  bindSw('#swSound','sound'); bindSw('#swSpeak','speak'); bindSw('#swMirror','mirror');
+  $('#sheetReset').addEventListener('click',()=>{
+    if(confirm('Nullstille navn, innstillinger og rekord?')){
+      try{ localStorage.removeItem('arfest.names'); localStorage.removeItem('arfest.set');
+        localStorage.removeItem('arfest.iosHint'); }catch(e){}
+      names=['Alpha','Sigma','Beta']; Object.assign(settings,{sound:true,speak:true,mirror:true,facing:'environment',hs:0});
+      figs.forEach((f,i)=>f.name=names[i]); refreshSound(); closeSheet(); say('Nullstilt ✨');
+    }
+  });
+
+  /* ============ iOS install hint ============ */
+  function maybeIosHint(){
+    const iOS=/iP(hone|ad|od)/.test(navigator.platform)||(/Mac/.test(navigator.platform)&&'ontouchend'in document);
+    const standalone=navigator.standalone||matchMedia('(display-mode: standalone)').matches;
+    if(iOS && !standalone && !LS.get('iosHint',false)){
+      const el=$('#iosHint'); el.style.display='flex';
+      setTimeout(()=>{ el.style.display='none'; },9000);
+    }
+  }
+  $('#iosClose').addEventListener('click',()=>{ $('#iosHint').style.display='none'; LS.set('iosHint',true); });
+
+  /* ============ boot ============ */
+  makeFigs(); resize();
+  // gentle idle preview behind the veil so it never looks dead
+  running=true; t0=performance.now(); loop();
+
+  // debug hook for automated screenshots (no camera hardware)
+  window.__demo=function(){
+    $('#veil').classList.add('hide');
+    settings.sound=false;
+    let k=0; (function fake(){ // synthesize a beat
+      bass=0.5+0.4*Math.sin(k*0.3); mid=0.4+0.3*Math.sin(k*0.5+1);
+      treble=0.3+0.3*Math.sin(k*0.7+2); energy=0.7; if(k%12===0)kick(); k++;
+      setTimeout(fake,60);
+    })();
+    figTalk(figs[1],'Wallah, se på oss danse, habibi! 🎶');
+  };
+})();
+</script>
+</body>
+</html>
