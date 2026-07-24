@@ -241,9 +241,10 @@
     <h2>Innstillinger</h2>
     <div class="sub">Stemme og hjerne.</div>
     <div class="field"><label>Stemme</label>
-      <select id="voiceSel"><option value="">Automatisk (beste norske)</option></select>
+      <select id="voiceSel"><option value="">Auto (Onyx — naturlig nett-stemme)</option></select>
+      <small style="display:block;color:var(--dim);font-size:12px;margin-top:8px">Naturlige stemmer streames gratis over nett. Uten nett brukes enhetens egen stemme.</small>
     </div>
-    <div class="toggle"><span>Maaz snakker høyt<small>Talesyntese</small></span><div class="sw" id="swSpeak"><i></i></div></div>
+    <div class="toggle"><span>Maaz snakker høyt<small>Naturlig nevral stemme</small></span><div class="sw" id="swSpeak"><i></i></div></div>
     <div class="toggle"><span>Smart AI-svar<small>Gratis åpent API (Pollinations) — uten nøkkel. Instant lokalt svar kommer uansett først.</small></span><div class="sw" id="swAI"><i></i></div></div>
     <button class="close" id="sheetClose">Ferdig</button>
     <button class="reset" id="sheetClear">Tøm samtalen</button>
@@ -589,7 +590,17 @@ function restoreChat(){
   log.scrollTop=log.scrollHeight;
 }
 
-/* ============ voice (natural TTS) ============ */
+/* ============ voice ============
+   Hovedmotor: naturlig neural nettstemme via Pollinations openai-audio
+   (gratis, aapent, ingen API-nokkel). Fallback: enhetens Web Speech. */
+const NEURAL_VOICES=[
+  ['onyx','Onyx — dyp og rolig (anbefalt)'],
+  ['echo','Echo — mannlig, varm'],
+  ['fable','Fable — livlig'],
+  ['alloy','Alloy — noytral'],
+  ['nova','Nova — lys'],
+  ['shimmer','Shimmer — myk']
+];
 let voices=[];
 function loadVoices(){voices=(speechSynthesis.getVoices()||[]);}
 if('speechSynthesis'in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices;}
@@ -601,31 +612,106 @@ function scoreVoice(v){
   if(v.localService)s+=1;
   return s;
 }
-function pickVoice(){
-  if(settings.voice){
-    const v=voices.find(v=>v.voiceURI===settings.voice);
-    if(v)return v;
-  }
+function pickDeviceVoice(uri){
+  if(uri){const v=voices.find(v=>v.voiceURI===uri);if(v)return v;}
   return voices.slice().sort((a,b)=>scoreVoice(b)-scoreVoice(a))[0];
+}
+function voiceMode(){
+  // ''            -> neural onyx (auto)
+  // 'neural:xxx'  -> neural med valgt stemme
+  // 'dev:uri'     -> enhetens stemme
+  const v=settings.voice||'';
+  if(v.startsWith('dev:'))return{engine:'device',voice:v.slice(4)};
+  if(v.startsWith('neural:'))return{engine:'neural',voice:v.slice(7)};
+  return{engine:'neural',voice:'onyx'};
 }
 let primed=false;
 function primeSpeech(){
-  if(primed||!('speechSynthesis'in window))return;primed=true;
-  try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u);}catch(e){}
+  if(primed)return;primed=true;
+  if('speechSynthesis'in window){
+    try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u);}catch(e){}
+  }
 }
-function speak(text){
-  if(!settings.speak||!('speechSynthesis'in window))return;
+function cleanForSpeech(text){
+  return text
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu,'')
+    .replace(/\s+/g,' ').trim();
+}
+/* --- neural TTS med cache + timeout --- */
+const ttsCache=new Map(); // key -> objectURL
+let curAudio=null;
+async function fetchNeural(text,voice){
+  const key=voice+'|'+text;
+  if(ttsCache.has(key))return ttsCache.get(key);
+  const sys='Du er en tekst-til-tale-motor. Les opp brukerens tekst ordrett på norsk med naturlig, vennlig tonefall. Ikke svar, ikke kommenter, ikke legg til noe.';
+  const url='https://text.pollinations.ai/'+encodeURIComponent(text)
+    +'?model=openai-audio&voice='+voice+'&system='+encodeURIComponent(sys)+'&referrer=maaz';
+  const ctrl=new AbortController();
+  const to=setTimeout(()=>ctrl.abort(),9000);
   try{
-    const clean=text
-      .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu,'')  // emojis
-      .replace(/wallah/gi,'wallah,')                            // liten pust
-      .trim();
-    if(!clean)return;
-    const u=new SpeechSynthesisUtterance(clean);
-    const v=pickVoice();if(v){u.voice=v;u.lang=v.lang;}else u.lang='nb-NO';
-    u.pitch=1;u.rate=1.04;u.volume=1;   // naturlig — ingen chipmunk/robot-pitch
+    const res=await fetch(url,{signal:ctrl.signal});
+    clearTimeout(to);
+    if(!res.ok)return null;
+    if(!/audio/i.test(res.headers.get('content-type')||''))return null;
+    const blob=await res.blob();
+    if(blob.size<800)return null;
+    const src=URL.createObjectURL(blob);
+    if(ttsCache.size>24){const k0=ttsCache.keys().next().value;
+      URL.revokeObjectURL(ttsCache.get(k0));ttsCache.delete(k0);}
+    ttsCache.set(key,src);
+    return src;
+  }catch(e){clearTimeout(to);return null;}
+}
+function playNeural(src){
+  return new Promise(resolve=>{
+    const a=new Audio(src);curAudio=a;
+    a.onplaying=()=>{
+      const d=(isFinite(a.duration)&&a.duration>0)?a.duration*1000:4000;
+      maaz.talkUntil=performance.now()+d;
+    };
+    a.onended=()=>resolve(true);
+    a.onerror=()=>resolve(false);
+    a.play().catch(()=>resolve(false));
+  });
+}
+function playDevice(text,uri){
+  if(!('speechSynthesis'in window))return;
+  try{
+    const u=new SpeechSynthesisUtterance(text);
+    const v=pickDeviceVoice(uri);if(v){u.voice=v;u.lang=v.lang;}else u.lang='nb-NO';
+    u.pitch=1;u.rate=1.04;u.volume=1;
+    u.onstart=()=>{maaz.talkUntil=performance.now()+text.length*68;};
     speechSynthesis.speak(u);
   }catch(e){}
+}
+/* --- talekø så svar ikke snakker i munnen paa hverandre --- */
+const speakQ=[];let speaking=false;
+async function processSpeakQ(){
+  if(speaking||!speakQ.length)return;
+  speaking=true;
+  const text=speakQ.shift();
+  const m=voiceMode();
+  let done=false;
+  if(m.engine==='neural'&&navigator.onLine){
+    const src=await fetchNeural(text,m.voice);
+    if(src&&settings.speak)done=await playNeural(src);
+  }
+  if(!done&&settings.speak)playDevice(text,m.engine==='device'?m.voice:'');
+  speaking=false;
+  processSpeakQ();
+}
+function speak(text){
+  if(!settings.speak)return;
+  const clean=cleanForSpeech(text);
+  if(!clean)return;
+  if(speakQ.length>3)speakQ.shift();
+  speakQ.push(clean);
+  processSpeakQ();
+}
+function hushVoice(){
+  speakQ.length=0;
+  if(curAudio){try{curAudio.pause();}catch(e){}curAudio=null;}
+  if('speechSynthesis'in window){try{speechSynthesis.cancel();}catch(e){}}
 }
 
 /* ============ Maaz brain ============ */
@@ -750,16 +836,26 @@ addEventListener('offline',refreshStatus);
 
 /* ============ settings ============ */
 const sheetBg=$('#sheetBg'),voiceSel=$('#voiceSel');
+function optgroup(label){const g=document.createElement('optgroup');g.label=label;return g;}
 function fillVoices(){
   while(voiceSel.options.length>1)voiceSel.remove(1);
+  voiceSel.options[0].textContent='Auto (Onyx — naturlig nett-stemme)';
+  // neural nett-stemmer (gratis, naturlige)
+  const gN=optgroup('Naturlige nett-stemmer (anbefalt)');
+  NEURAL_VOICES.forEach(([id,label])=>{
+    const o=document.createElement('option');o.value='neural:'+id;o.textContent=label;gN.appendChild(o);
+  });
+  voiceSel.appendChild(gN);
+  // enhetsstemmer (offline-backup)
   loadVoices();
-  voices.filter(v=>/^nb|^no|^da|^sv|^en/i.test(v.lang))
-    .sort((a,b)=>scoreVoice(b)-scoreVoice(a))
-    .forEach(v=>{
-      const o=document.createElement('option');
-      o.value=v.voiceURI;o.textContent=v.name+' ('+v.lang+')';
-      voiceSel.appendChild(o);
+  const dev=voices.filter(v=>/^nb|^no|^da|^sv|^en/i.test(v.lang)).sort((a,b)=>scoreVoice(b)-scoreVoice(a));
+  if(dev.length){
+    const gD=optgroup('Enhetens stemmer (offline)');
+    dev.forEach(v=>{
+      const o=document.createElement('option');o.value='dev:'+v.voiceURI;o.textContent=v.name+' ('+v.lang+')';gD.appendChild(o);
     });
+    voiceSel.appendChild(gD);
+  }
   voiceSel.value=settings.voice||'';
   if(voiceSel.value!==(settings.voice||''))voiceSel.value='';
 }
@@ -773,7 +869,7 @@ function closeSheet(){
   settings.voice=voiceSel.value;
   LS.set('set',settings);refreshStatus();
   sheetBg.classList.remove('show');
-  if(settings.speak){primeSpeech();speak('Yalla, sånn hører jeg ut nå, habibi.');}
+  if(settings.speak){primeSpeech();hushVoice();speak('Yalla, sånn hører jeg ut nå, habibi.');}
 }
 $('#btnSet').addEventListener('click',openSheet);
 $('#sheetClose').addEventListener('click',closeSheet);
